@@ -11,7 +11,8 @@ const FILES = [
   "Picture2.png",
   "figure1.png",
   "figure2.png",
-  "figure3.png"
+  "figure3.png",
+  "figure4.png"
 ];
 
 const STAGES = [
@@ -83,7 +84,8 @@ const STAGE_EVIDENCE = {
     images: [
       { src: "figure1.png", caption: "肿瘤病理切片 HE 10X" },
       { src: "figure2.png", caption: "肿瘤病理切片 HE 20X" },
-      { src: "figure3.png", caption: "肿瘤病理切片 HE 40X" }
+      { src: "figure3.png", caption: "肿瘤病理切片 HE 40X" },
+      { src: "figure4.png", caption: "右上淋巴结病理切片 HE 20X" }
     ],
     clues: [
       "学生任务：重新评估诊断，并对比两次入院资料差异。",
