@@ -56,7 +56,6 @@
         <div id="stageCaseText" class="case-text"></div>
         <div id="stageMedia" class="stage-media"></div>
         <ul id="stageChecklist" class="stage-checklist"></ul>
-        <div id="stageSources" class="stage-sources"></div>
       </section>
       <div id="chat" class="chat" aria-live="polite"></div>
       <form id="chatForm" class="chat-form">
@@ -68,6 +67,14 @@
       </form>
     </section>
   </main>
+
+  <div id="imageLightbox" class="lightbox" aria-hidden="true">
+    <button id="lightboxClose" class="lightbox-close" type="button">关闭</button>
+    <figure class="lightbox-figure">
+      <img id="lightboxImg" alt="病理图放大预览" />
+      <figcaption id="lightboxCaption"></figcaption>
+    </figure>
+  </div>
 
   <script src="./app.js"></script>
 </body>

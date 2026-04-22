@@ -49,20 +49,16 @@ const STAGES = [
 const STAGE_EVIDENCE = {
   1: {
     narrative:
-      "首诊阶段：先完整阅读病例文字与病理图，再进行初诊判断。",
+      "首诊阶段：请先查看病理图与相关信息，再完成初步诊断判断。",
     caseText: [
-      "患者，男性，60岁。因发现右颊部肿物半年余入院。半年前发现右颊部黄豆大小肿物，无疼痛、出血等不适，自行药物治疗疗效不佳，后逐渐增大至山核桃大小。",
-      "门诊行局部肿物切取活检，病理提示右颊部鳞状上皮乳头状瘤样增生。",
-      "体检要点：右颊黏膜约3cm肿块，质中，界尚清，肿块表面多乳头状突起，粗糙，活检创口愈合好；右颊部肿胀明显，触痛（+）。双侧颈部及下颌区未见明显肿大淋巴结。",
-      "入院后于2019年5月8日行右颊部病损切除术+颊面部局部皮瓣转移修复术。因术前已行局部活检，完整切除标本未再行病理检查。"
+      "患者，男性，60岁。因发现右颊部肿物半年余入院。",
+      "半年余前因口腔扁平苔藓于我院门诊就诊，发现右颊部一黄豆大小肿物，无疼痛、出血等不适。一直行药物治疗，疗效不佳，且半年来肿物逐渐增大，现增大至山核桃大小。门诊行局部肿物切取活检，病理示右颊部鳞状上皮乳头状瘤样增生。",
+      "体检：左右脸面部基本对称，双侧颞下颌关节区无红肿触痛，关节活动自如。右颊粘膜可及大小约3cm肿块，质中，界尚清，肿块表面多呈乳头状突起，粗糙，活检创口愈合好，右颊部肿胀明显，触痛（+）。左颊部、腭部、舌体及口底粘膜无异常，舌体活动好，双侧颈部及下颌区未及明显肿大淋巴结。",
+      "入院后完善常规检查，于2019年5月8日行右颊部病损切除术+颌面部局部皮瓣转移修复术。因术前已行局部肿物切取活检，故完整切除标本未行病理检查。"
     ],
     images: [
-      { src: "Picture.png", caption: "首诊病理图（左图10X）" },
-      { src: "Picture2.png", caption: "首诊病理图（右图20X）" }
-    ],
-    sources: [
-      { href: "患者初诊.pdf", label: "查看原始病例：患者初诊.pdf" },
-      { href: "肿瘤病例.pdf", label: "查看关联材料：肿瘤病例.pdf" }
+      { src: "Picture.png", caption: "局部肿物病理切片 HE 10X" },
+      { src: "Picture2.png", caption: "局部肿物病理切片 HE 20X" }
     ],
     clues: [
       "核心判断1：当前偏良性还是偏恶性？",
@@ -74,22 +70,19 @@ const STAGE_EVIDENCE = {
     narrative:
       "复诊阶段：加入复发与病程反转信息，请重新评估首次决策是否存在低估风险。",
     images: [{ src: "Picture2.png", caption: "复诊外观图：术后复发、增大、破溃风险" }],
-    clues: ["术后复发并增大", "局部破溃、质地变硬", "提示首次处置可能不足"],
-    sources: [{ href: "患者复诊.pdf", label: "查看原始病例：患者复诊.pdf" }]
+    clues: ["术后复发并增大", "局部破溃、质地变硬", "提示首次处置可能不足"]
   },
   3: {
     narrative:
       "复盘阶段：二次病理与转移证据已经出现，请按诊断偏差、标本漏洞、手术范围三环节复盘。",
     images: [],
-    clues: ["二次手术病理结果", "淋巴结转移证据", "肺部转移证据"],
-    sources: [{ href: "诊断复盘.pdf", label: "查看原始材料：诊断复盘.pdf" }]
+    clues: ["二次手术病理结果", "淋巴结转移证据", "肺部转移证据"]
   },
   4: {
     narrative:
       "迁移阶段：请将本案教训转化为通用临床规则，形成可执行清单。",
     images: [],
-    clues: ["诊疗规范清单", "沟通要点清单", "风险防范清单", "个人行动卡"],
-    sources: [{ href: "迁移应用.pdf", label: "查看原始材料：迁移应用.pdf" }]
+    clues: ["诊疗规范清单", "沟通要点清单", "风险防范清单", "个人行动卡"]
   }
 };
 
@@ -117,7 +110,10 @@ const stageNarrative = document.getElementById("stageNarrative");
 const stageCaseText = document.getElementById("stageCaseText");
 const stageMedia = document.getElementById("stageMedia");
 const stageChecklist = document.getElementById("stageChecklist");
-const stageSources = document.getElementById("stageSources");
+const imageLightbox = document.getElementById("imageLightbox");
+const lightboxImg = document.getElementById("lightboxImg");
+const lightboxCaption = document.getElementById("lightboxCaption");
+const lightboxClose = document.getElementById("lightboxClose");
 
 const FREE_MODEL_CANDIDATES = [
   { endpoint: "https://text.pollinations.ai/openai", model: "openai" },
@@ -179,11 +175,10 @@ function renderStageEvidence() {
     stageCaseText.innerHTML = "";
     stageMedia.innerHTML = "";
     stageChecklist.innerHTML = "";
-    stageSources.innerHTML = "";
     return;
   }
 
-  const evidence = STAGE_EVIDENCE[stage.id] || { narrative: "", images: [], clues: [], caseText: [], sources: [] };
+  const evidence = STAGE_EVIDENCE[stage.id] || { narrative: "", images: [], clues: [], caseText: [] };
   stageTitle.textContent = `${stage.title} 资料卡`;
   stageNarrative.textContent = evidence.narrative;
 
@@ -204,6 +199,12 @@ function renderStageEvidence() {
     image.onerror = () => {
       image.alt = "图片未加载，请检查静态资源是否存在";
     };
+    image.addEventListener("click", () => {
+      lightboxImg.src = image.src;
+      lightboxCaption.textContent = img.caption;
+      imageLightbox.classList.add("open");
+      imageLightbox.setAttribute("aria-hidden", "false");
+    });
     const cap = document.createElement("figcaption");
     cap.textContent = img.caption;
     fig.appendChild(image);
@@ -217,16 +218,13 @@ function renderStageEvidence() {
     li.textContent = clue;
     stageChecklist.appendChild(li);
   });
+}
 
-  stageSources.innerHTML = "";
-  (evidence.sources || []).forEach((src) => {
-    const a = document.createElement("a");
-    a.href = `./${encodeURIComponent(src.href)}`;
-    a.textContent = src.label;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    stageSources.appendChild(a);
-  });
+function closeLightbox() {
+  imageLightbox.classList.remove("open");
+  imageLightbox.setAttribute("aria-hidden", "true");
+  lightboxImg.removeAttribute("src");
+  lightboxCaption.textContent = "";
 }
 
 function pushStageTask() {
@@ -675,5 +673,16 @@ function exportRecords() {
 }
 
 exportBtn.addEventListener("click", exportRecords);
+lightboxClose.addEventListener("click", closeLightbox);
+imageLightbox.addEventListener("click", (e) => {
+  if (e.target === imageLightbox) {
+    closeLightbox();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && imageLightbox.classList.contains("open")) {
+    closeLightbox();
+  }
+});
 
 init();

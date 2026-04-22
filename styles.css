@@ -225,9 +225,12 @@ details summary {
 
 .stage-media img {
   width: 100%;
-  height: 180px;
-  object-fit: cover;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
   display: block;
+  background: #faf7ef;
+  cursor: zoom-in;
 }
 
 .stage-media figcaption {
@@ -242,21 +245,48 @@ details summary {
   color: #34463f;
 }
 
-.stage-sources {
-  margin-top: 0.55rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.82);
+  display: none;
+  z-index: 60;
+  padding: 1rem;
 }
 
-.stage-sources a {
-  text-decoration: none;
-  border: 1px solid #d8c8ad;
-  background: #fff6e8;
-  color: #6b3c26;
-  padding: 0.34rem 0.58rem;
+.lightbox.open {
+  display: grid;
+  place-items: center;
+}
+
+.lightbox-figure {
+  margin: 0;
+  max-width: min(96vw, 1200px);
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: 84vh;
+  display: block;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.lightbox figcaption {
+  margin-top: 0.5rem;
+  color: #f5f2e9;
+  font-size: 0.95rem;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
   border-radius: 999px;
-  font-size: 0.86rem;
+  border: 1px solid #ddccac;
+  background: #fef4e2;
+  color: #533221;
 }
 
 .msg {
