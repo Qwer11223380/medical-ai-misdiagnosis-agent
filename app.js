@@ -96,8 +96,23 @@ const STAGE_EVIDENCE = {
   3: {
     narrative:
       "复盘阶段：二次病理与转移证据已经出现，请按诊断偏差、标本漏洞、手术范围三环节复盘。",
-    images: [],
-    clues: ["二次手术病理结果", "淋巴结转移证据", "肺部转移证据"]
+    caseText: [
+      "首次诊断偏差根源分析：",
+      "1. 诊断偏差点：首次活检显示为'乳头状增生'，被误读为低危病变，实则为分化良好的鳞状细胞癌的分化瘤样表现。",
+      "2. 标本处理漏洞：首次手术未送完整病理，仅留活检创面无法深入评估底层组织，遗漏恶性信号。",
+      "3. 临床决策缺陷：过度依赖单次活检结果，未考虑临床表现（半年快速生长）与病理的矛盾。",
+      "4. 手术范围不足：首次手术范围限制、未行淋巴结清扫，致使潜在微转移未被清除。"
+    ],
+    images: [
+      { src: "figure1.png", caption: "术后肿瘤病理切片 HE 10X" },
+      { src: "figure2.png", caption: "术后肿瘤病理切片 HE 20X" },
+      { src: "figure4.png", caption: "右上淋巴结转移证据 HE 20X" }
+    ],
+    clues: [
+      "二次手术病理结果：鳞状细胞癌，分化程度改变",
+      "淋巴结转移证据：右上颈部淋巴结已转移",
+      "临床沟通要点：患者与家属的知情同意与心理干预"
+    ]
   },
   4: {
     narrative:
@@ -247,7 +262,7 @@ function renderStageEvidence() {
 
 function renderStageTaskPanel(stage) {
   stageTaskPanel.innerHTML = "";
-  if (stage.id !== 1 && stage.id !== 2) {
+  if (stage.id !== 1 && stage.id !== 2 && stage.id !== 3) {
     return;
   }
 
@@ -315,11 +330,65 @@ function renderStageTaskPanel(stage) {
       </tbody>
     </table>
   `;
+
+  if (stage.id === 3) {
+    stageTaskPanel.innerHTML = `
+      <p class="task-title">第三幕 PBL 讨论组件</p>
+      <div class="pbl-main-question">
+        <strong>🎯 核心问题：作为医生，你吸取了什么教训？</strong>
+      </div>
+      <div class="pbl-scaffolding">
+        <p class="pbl-label">💡 AI助教提供的脚手架问题（供讨论参考）：</p>
+        <div class="scaffold-list">
+          <label class="scaffold-item">
+            <input type="checkbox" name="scaffold" value="q1" />
+            <span>Q1: 第一次手术是否切缘不足？</span>
+          </label>
+          <label class="scaffold-item">
+            <input type="checkbox" name="scaffold" value="q2" />
+            <span>Q2: 扁平苔藓与癌变的关系如何评估？</span>
+          </label>
+          <label class="scaffold-item">
+            <input type="checkbox" name="scaffold" value="q3" />
+            <span>Q3: 为什么没做完整病理标本检查？</span>
+          </label>
+        </div>
+      </div>
+      <div class="pbl-response">
+        <label for="pblAnswer"><strong>请综合回答上述脚手架问题，提出你的复盘要点与改进方案：</strong></label>
+        <textarea id="pblAnswer" placeholder="例如：（1）第一次活检虽显示低危特征，但应结合临床表现重新评估…（2）扁平苔藓是癌前病变，此患者活检已提示增生，应提高警惕…（3）首次手术缺少完整标本病理…（4）改进方案：建立诊疗规范、完整的标本处理流程、多学科协作机制…" style="min-height: 150px;"></textarea>
+      </div>
+    `;
+  }
 }
 
 function collectStageStructuredInput(stage) {
-  if (stage.id !== 1 && stage.id !== 2) {
+  if (stage.id !== 1 && stage.id !== 2 && stage.id !== 3) {
     return "";
+  }
+
+  if (stage.id === 3) {
+    const pblAnswer = document.getElementById("pblAnswer")?.value.trim() || "";
+    const scaffolds = Array.from(document.querySelectorAll('input[name="scaffold"]:checked')).map(e => e.value);
+    
+    if (!pblAnswer) {
+      throw new Error("第三幕请先完成 PBL 讨论回答。\n需要填写：综合回答核心问题和脚手架问题。");
+    }
+
+    const scaffoldSummary = scaffolds.length > 0 
+      ? `已参考脚手架问题：${scaffolds.map(s => {
+          const questions = { q1: "Q1-切缘不足分析", q2: "Q2-扁平苔藓关系", q3: "Q3-病理标本漏洞" };
+          return questions[s] || s;
+        }).join("、")}`
+      : "未勾选脚手架问题，建议参考所有脚手架问题进行讨论";
+
+    return [
+      `【PBL讨论回答】`,
+      pblAnswer,
+      ``,
+      `【参考信息】`,
+      scaffoldSummary
+    ].join("\n");
   }
 
   if (stage.id === 2) {
@@ -485,10 +554,10 @@ function buildEvaluationMessages(stage, userText) {
       "解释首次活检与二次病理结果为何会不一致"
     ],
     3: [
-      "识别首次诊断偏差点",
-      "指出活检与标本处理可能漏洞",
-      "说明手术范围不足与转移风险管理缺失",
-      "给出沟通与复盘改进策略"
+      "识别首次诊断偏差点（良恶性误判、活检危险）",
+      "分析标本处理漏洞（未进行完整病理检查）",
+      "阐述手术范围不足与淋巴结转移风险",
+      "提出改进方案（多学科协作、诊疗规范、医患沟通）"
     ],
     4: [
       "形成诊疗规范清单",
@@ -502,15 +571,26 @@ function buildEvaluationMessages(stage, userText) {
     ? `【案例资料】\n${state.knowledgeText}`
     : "【案例资料】尚未加载。请提醒用户先加载资料。";
 
-  return [
-    {
-      role: "system",
-      content:
-        "你是医学教育评估官。请按任务引擎锁步规则评估学生作答。\n" +
+  let systemPrompt = "你是医学教育评估官。请按任务引擎锁步规则评估学生作答。\n" +
         "只输出严格 JSON，不要输出额外文本。\n" +
         "JSON schema: {\"pass\":boolean,\"score\":0-100整数,\"missing\":[string],\"feedback\":string,\"next_hint\":string,\"teaching_note\":string}\n" +
         "评分必须严格，不满足必答要点不得通过。\n" +
-        "必须在 teaching_note 中提醒：仅教学用途，不构成医疗建议。"
+        "必须在 teaching_note 中提醒：仅教学用途，不构成医疗建议。";
+
+  // Stage 3特殊提示：支持PBL讨论与脚手架问题
+  if (stage.id === 3) {
+    systemPrompt += "\n\n【第三幕PBL讨论评估规则】\n" +
+      "这是一个分组讨论（PBL）模式，学生应基于以下脚手架问题展开讨论：\n" +
+      "- Q1: 第一次手术是否切缘不足？（关键词：切缘、边界、病理边界）\n" +
+      "- Q2: 扁平苔藓与癌变的关系？（关键词：癌前病变、分化、恶变机制）\n" +
+      "- Q3: 为什么没做完整病理标本检查？（关键词：标本处理、病理漏洞、风险）\n" +
+      "评估学生是否能够：(1)系统复盘诊疗偏差；(2)识别关键环节漏洞；(3)提出可行改进方案。";
+  }
+
+  return [
+    {
+      role: "system",
+      content: systemPrompt
     },
     {
       role: "user",

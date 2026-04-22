@@ -392,3 +392,86 @@ details summary {
     min-height: 280px;
   }
 }
+
+/* PBL讨论模式样式 */
+.pbl-main-question {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff1d6 100%);
+  border-left: 4px solid #b44f2d;
+  padding: 0.8rem;
+  margin: 0.6rem 0;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #1e3f39;
+}
+
+.pbl-label {
+  font-weight: 600;
+  color: #1e3f39;
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.scaffold-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.scaffold-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.scaffold-item:hover {
+  background: #f0f4e8;
+}
+
+.scaffold-item input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #2f6f62;
+}
+
+.scaffold-item span {
+  color: #34463f;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.pbl-response {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #e2d5be;
+}
+
+.pbl-response label {
+  display: block;
+  font-weight: 600;
+  color: #1e3f39;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.pbl-response textarea {
+  width: 100%;
+  font-family: inherit;
+  border: 1px solid #d8d0bf;
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  resize: vertical;
+  background: #fffaf1;
+  color: #17201d;
+}
+
+.pbl-response textarea:focus {
+  outline: none;
+  border-color: #2f6f62;
+  box-shadow: 0 0 0 3px rgba(47, 111, 98, 0.1);
+}
