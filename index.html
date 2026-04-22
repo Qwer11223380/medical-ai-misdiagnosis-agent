@@ -30,7 +30,7 @@
           <li data-stage="1" class="active">关卡一：雾里看花</li>
           <li data-stage="2">关卡二：晴天霹雳</li>
           <li data-stage="3">第三幕 误诊复盘</li>
-          <li data-stage="4">第四幕 迁移应用</li>
+          <li data-stage="4">第四幕 设身处地</li>
         </ol>
         <p id="stageStatus" class="status">
           当前幕：第一幕。仅完成本幕后才会解锁下一幕。
@@ -47,6 +47,35 @@
         <summary>已配置资料清单</summary>
         <ul id="fileList"></ul>
       </details>
+    </section>
+
+    <section id="reportPanel" class="panel report-panel" hidden>
+      <div class="report-header">
+        <div>
+          <p class="eyebrow">Learning Report</p>
+          <h2>临床思辨与沟通能力诊断报告</h2>
+        </div>
+        <p class="status">基于当前学生四幕作答实时生成，仅做本地教学反馈。</p>
+      </div>
+      <div id="reportSummary" class="report-summary"></div>
+      <div class="report-grid">
+        <section class="report-block">
+          <h3>分幕得分</h3>
+          <div id="stageScoreChart" class="metric-chart"></div>
+        </section>
+        <section class="report-block">
+          <h3>五维画像</h3>
+          <div id="dimensionChart" class="metric-chart"></div>
+        </section>
+        <section class="report-block">
+          <h3>知识-能力-素养</h3>
+          <div id="capabilityChart" class="metric-chart"></div>
+        </section>
+        <section class="report-block">
+          <h3>综合诊断</h3>
+          <pre id="reportNarrative" class="report-narrative"></pre>
+        </section>
+      </div>
     </section>
 
     <section class="panel chat-panel">

@@ -42,13 +42,43 @@ const STAGES = [
   },
   {
     id: 4,
-    title: "第四幕 迁移应用",
+    title: "第四幕 设身处地",
     task:
-      "请给出可迁移方案：1) 诊疗规范清单；2) 沟通要点清单；3) 风险防范清单；4) 你的个人行动卡。",
-    keyPoints: ["诊疗规范", "沟通要点", "风险防范", "个人行动卡"],
+      "请围绕“第一次出院时，应如何与患者沟通？”完成情景对话：1) 回应家属焦虑与费用顾虑；2) 完成知情同意式解释；3) 给出可执行的随访医嘱。",
+    keyPoints: ["人文关怀", "知情同意", "随访医嘱", "费用顾虑回应"],
     passScore: 75
   }
 ];
+
+const DIMENSION_LABELS = {
+  diagnosticReasoning: "诊断推理",
+  evidenceIntegration: "证据整合",
+  clinicalDecision: "临床决策",
+  communication: "沟通能力",
+  empathy: "人文关怀"
+};
+
+const DIMENSION_KEYWORDS = {
+  diagnosticReasoning: ["良恶性", "恶性", "复发", "转移", "风险", "诊断", "恶变"],
+  evidenceIntegration: ["病理", "活检", "证据", "临床", "切缘", "淋巴结", "标本"],
+  clinicalDecision: ["手术", "切除", "清扫", "随访", "复诊", "评估", "处理"],
+  communication: ["解释", "告知", "沟通", "理解", "复查", "随访", "知情"],
+  empathy: ["理解", "担心", "放心", "焦虑", "家属", "费用", "压力", "一起"]
+};
+
+const STAGE_DIMENSION_WEIGHTS = {
+  1: { diagnosticReasoning: 0.45, evidenceIntegration: 0.3, clinicalDecision: 0.15, communication: 0.05, empathy: 0.05 },
+  2: { diagnosticReasoning: 0.3, evidenceIntegration: 0.25, clinicalDecision: 0.25, communication: 0.1, empathy: 0.1 },
+  3: { diagnosticReasoning: 0.15, evidenceIntegration: 0.25, clinicalDecision: 0.3, communication: 0.15, empathy: 0.15 },
+  4: { diagnosticReasoning: 0.05, evidenceIntegration: 0.1, clinicalDecision: 0.2, communication: 0.3, empathy: 0.35 }
+};
+
+const STAGE_CAPABILITY_BUCKETS = {
+  1: { knowledge: 0.55, ability: 0.3, literacy: 0.15 },
+  2: { knowledge: 0.35, ability: 0.45, literacy: 0.2 },
+  3: { knowledge: 0.2, ability: 0.45, literacy: 0.35 },
+  4: { knowledge: 0.1, ability: 0.35, literacy: 0.55 }
+};
 
 const STAGE_EVIDENCE = {
   1: {
@@ -116,9 +146,18 @@ const STAGE_EVIDENCE = {
   },
   4: {
     narrative:
-      "迁移阶段：请将本案教训转化为通用临床规则，形成可执行清单。",
+      "沟通阶段：学生扮演出院医生，AI 扮演焦虑的患者家属，重点考查人文关怀、知情同意和随访交代。",
+    caseText: [
+      "情景：患者首次手术后准备出院，家属对病情是否严重、会不会复发以及复查费用十分焦虑。",
+      "家属担忧：一是害怕花了钱却仍然复发；二是听不懂病理和风险解释；三是不清楚出院后该怎么复查、什么时候必须返院。",
+      "学生任务：请以医生身份完成一次出院沟通，既要安抚情绪，又要讲清不确定性、复查必要性和具体随访安排。"
+    ],
     images: [],
-    clues: ["诊疗规范清单", "沟通要点清单", "风险防范清单", "个人行动卡"]
+    clues: [
+      "家属角色设定：担心复发，又怕花钱",
+      "必答要点：人文关怀、知情同意、随访医嘱、费用顾虑回应",
+      "建议结构：先共情，再解释，再交代复查与警示症状"
+    ]
   }
 };
 
@@ -127,7 +166,8 @@ const state = {
   currentStageIndex: 0,
   stageResults: {},
   knowledgeLoaded: false,
-  records: []
+  records: [],
+  report: null
 };
 
 const chat = document.getElementById("chat");
@@ -151,6 +191,12 @@ const imageLightbox = document.getElementById("imageLightbox");
 const lightboxImg = document.getElementById("lightboxImg");
 const lightboxCaption = document.getElementById("lightboxCaption");
 const lightboxClose = document.getElementById("lightboxClose");
+const reportPanel = document.getElementById("reportPanel");
+const reportSummary = document.getElementById("reportSummary");
+const stageScoreChart = document.getElementById("stageScoreChart");
+const dimensionChart = document.getElementById("dimensionChart");
+const capabilityChart = document.getElementById("capabilityChart");
+const reportNarrative = document.getElementById("reportNarrative");
 
 const FREE_MODEL_CANDIDATES = [
   { endpoint: "https://text.pollinations.ai/openai", model: "openai" },
@@ -262,7 +308,7 @@ function renderStageEvidence() {
 
 function renderStageTaskPanel(stage) {
   stageTaskPanel.innerHTML = "";
-  if (stage.id !== 1 && stage.id !== 2 && stage.id !== 3) {
+  if (stage.id !== 1 && stage.id !== 2 && stage.id !== 3 && stage.id !== 4) {
     return;
   }
 
@@ -292,6 +338,63 @@ function renderStageTaskPanel(stage) {
           </tr>
         </tbody>
       </table>
+    `;
+    return;
+  }
+
+  if (stage.id === 3) {
+    stageTaskPanel.innerHTML = `
+      <p class="task-title">第三幕 PBL 讨论组件</p>
+      <div class="pbl-main-question">
+        <strong>🎯 核心问题：作为医生，你吸取了什么教训？</strong>
+      </div>
+      <div class="pbl-scaffolding">
+        <p class="pbl-label">💡 AI助教提供的脚手架问题（供讨论参考）：</p>
+        <div class="scaffold-list">
+          <label class="scaffold-item">
+            <input type="checkbox" name="scaffold" value="q1" />
+            <span>Q1: 第一次手术是否切缘不足？</span>
+          </label>
+          <label class="scaffold-item">
+            <input type="checkbox" name="scaffold" value="q2" />
+            <span>Q2: 扁平苔藓与癌变的关系如何评估？</span>
+          </label>
+          <label class="scaffold-item">
+            <input type="checkbox" name="scaffold" value="q3" />
+            <span>Q3: 为什么没做完整病理标本检查？</span>
+          </label>
+        </div>
+      </div>
+      <div class="pbl-response">
+        <label for="pblAnswer"><strong>请综合回答上述脚手架问题，提出你的复盘要点与改进方案：</strong></label>
+        <textarea id="pblAnswer" placeholder="例如：（1）第一次活检虽显示低危特征，但应结合临床表现重新评估…（2）扁平苔藓是癌前病变，此患者活检已提示增生，应提高警惕…（3）首次手术缺少完整标本病理…（4）改进方案：建立诊疗规范、完整的标本处理流程、多学科协作机制…" style="min-height: 150px;"></textarea>
+      </div>
+    `;
+    return;
+  }
+
+  if (stage.id === 4) {
+    stageTaskPanel.innerHTML = `
+      <p class="task-title">第四幕 AI 情景对话组件</p>
+      <div class="dialogue-card family">
+        <p class="dialogue-role">AI家属</p>
+        <p>医生，手术不是已经做完了吗？为什么还要反复复查？我们家里现在经济压力也很大，我最担心的是以后还会不会复发。您能不能直接告诉我，这个病到底严不严重，后面还要花多少钱？</p>
+      </div>
+      <div class="dialogue-card followup">
+        <p class="dialogue-role">追问提示</p>
+        <p>如果你准备在回答中一并覆盖，可以顺带说明：回家后该观察什么症状？如果不按时复查会有什么风险？</p>
+      </div>
+      <div class="pbl-response">
+        <label for="dischargeCommunication"><strong>请以医生身份作答：</strong></label>
+        <textarea id="dischargeCommunication" placeholder="建议结构：先共情安抚，再解释当前情况与不确定性，然后明确复查时间、警示症状和费用沟通原则。" style="min-height: 180px;"></textarea>
+      </div>
+      <div class="care-checklist">
+        <p class="pbl-label">建议覆盖的沟通动作：</p>
+        <label class="scaffold-item"><input type="checkbox" name="careAction" value="emotion" /> <span>先回应焦虑情绪</span></label>
+        <label class="scaffold-item"><input type="checkbox" name="careAction" value="consent" /> <span>讲清知情同意与不确定性</span></label>
+        <label class="scaffold-item"><input type="checkbox" name="careAction" value="followup" /> <span>明确复查时间与警示症状</span></label>
+        <label class="scaffold-item"><input type="checkbox" name="careAction" value="cost" /> <span>回应费用顾虑但不牺牲必要随访</span></label>
+      </div>
     `;
     return;
   }
@@ -330,41 +433,33 @@ function renderStageTaskPanel(stage) {
       </tbody>
     </table>
   `;
-
-  if (stage.id === 3) {
-    stageTaskPanel.innerHTML = `
-      <p class="task-title">第三幕 PBL 讨论组件</p>
-      <div class="pbl-main-question">
-        <strong>🎯 核心问题：作为医生，你吸取了什么教训？</strong>
-      </div>
-      <div class="pbl-scaffolding">
-        <p class="pbl-label">💡 AI助教提供的脚手架问题（供讨论参考）：</p>
-        <div class="scaffold-list">
-          <label class="scaffold-item">
-            <input type="checkbox" name="scaffold" value="q1" />
-            <span>Q1: 第一次手术是否切缘不足？</span>
-          </label>
-          <label class="scaffold-item">
-            <input type="checkbox" name="scaffold" value="q2" />
-            <span>Q2: 扁平苔藓与癌变的关系如何评估？</span>
-          </label>
-          <label class="scaffold-item">
-            <input type="checkbox" name="scaffold" value="q3" />
-            <span>Q3: 为什么没做完整病理标本检查？</span>
-          </label>
-        </div>
-      </div>
-      <div class="pbl-response">
-        <label for="pblAnswer"><strong>请综合回答上述脚手架问题，提出你的复盘要点与改进方案：</strong></label>
-        <textarea id="pblAnswer" placeholder="例如：（1）第一次活检虽显示低危特征，但应结合临床表现重新评估…（2）扁平苔藓是癌前病变，此患者活检已提示增生，应提高警惕…（3）首次手术缺少完整标本病理…（4）改进方案：建立诊疗规范、完整的标本处理流程、多学科协作机制…" style="min-height: 150px;"></textarea>
-      </div>
-    `;
-  }
 }
 
 function collectStageStructuredInput(stage) {
-  if (stage.id !== 1 && stage.id !== 2 && stage.id !== 3) {
+  if (stage.id !== 1 && stage.id !== 2 && stage.id !== 3 && stage.id !== 4) {
     return "";
+  }
+
+  if (stage.id === 4) {
+    const dischargeCommunication = document.getElementById("dischargeCommunication")?.value.trim() || "";
+    const careActions = Array.from(document.querySelectorAll('input[name="careAction"]:checked')).map((element) => element.value);
+
+    if (!dischargeCommunication) {
+      throw new Error("第四幕请先完成出院沟通回答。\n需要填写：对焦虑家属的完整沟通回应。");
+    }
+
+    const careActionLabels = {
+      emotion: "先回应焦虑情绪",
+      consent: "讲清知情同意与不确定性",
+      followup: "明确复查时间与警示症状",
+      cost: "回应费用顾虑"
+    };
+
+    return [
+      "【AI家属情景】患者家属担心复发又怕花钱，要求医生解释病情与后续安排。",
+      `【学生沟通回应】${dischargeCommunication}`,
+      `【已覆盖沟通动作】${careActions.length > 0 ? careActions.map((item) => careActionLabels[item] || item).join("、") : "未勾选，按正文评估"}`
+    ].join("\n");
   }
 
   if (stage.id === 3) {
@@ -523,7 +618,9 @@ async function loadKnowledge() {
     state.currentStageIndex = 0;
     state.stageResults = {};
     state.records = [];
+    state.report = null;
     renderStageTimeline();
+    renderReportDashboard();
     const loadedCount = chunks.length;
     const failCount = failed.length;
     knowledgeStatus.textContent = `已加载 ${loadedCount} 份资料，失败 ${failCount} 份。`;
@@ -560,10 +657,10 @@ function buildEvaluationMessages(stage, userText) {
       "提出改进方案（多学科协作、诊疗规范、医患沟通）"
     ],
     4: [
-      "形成诊疗规范清单",
-      "形成沟通要点清单",
-      "形成风险防范清单",
-      "形成个人行动卡并可执行"
+      "先回应家属焦虑并体现人文关怀",
+      "完成知情同意式解释，讲清当前不确定性",
+      "给出明确的随访医嘱与警示症状",
+      "回应费用顾虑但不弱化必要复查"
     ]
   };
 
@@ -585,6 +682,17 @@ function buildEvaluationMessages(stage, userText) {
       "- Q2: 扁平苔藓与癌变的关系？（关键词：癌前病变、分化、恶变机制）\n" +
       "- Q3: 为什么没做完整病理标本检查？（关键词：标本处理、病理漏洞、风险）\n" +
       "评估学生是否能够：(1)系统复盘诊疗偏差；(2)识别关键环节漏洞；(3)提出可行改进方案。";
+  }
+
+  if (stage.id === 4) {
+    systemPrompt += "\n\n【第四幕沟通评估规则】\n" +
+      "这是出院沟通情景。学生扮演医生，面对担心复发又怕花钱的患者家属。\n" +
+      "重点检查：\n" +
+      "- 是否先回应情绪并体现共情\n" +
+      "- 是否完成知情同意式解释，避免生硬或恐吓\n" +
+      "- 是否明确复查时间、警示症状和返院条件\n" +
+      "- 是否正面回应费用顾虑，但不牺牲必要的随访建议\n" +
+      "如果学生只讲医学结论、不回应情绪或费用压力，不得高分通过。";
   }
 
   return [
@@ -668,6 +776,214 @@ function localFallbackEvaluation(stage, userText) {
   };
 }
 
+function computeKeywordCoverage(text, keywords) {
+  const normalized = String(text || "");
+  const hits = keywords.filter((keyword) => normalized.includes(keyword)).length;
+  return keywords.length === 0 ? 0 : Math.round((hits / keywords.length) * 100);
+}
+
+function deriveDimensionScores(stage, userText, stageScore) {
+  const weights = STAGE_DIMENSION_WEIGHTS[stage.id] || STAGE_DIMENSION_WEIGHTS[1];
+  const dimensionScores = {};
+
+  Object.keys(DIMENSION_LABELS).forEach((dimensionKey) => {
+    const keywordScore = computeKeywordCoverage(userText, DIMENSION_KEYWORDS[dimensionKey]);
+    const emphasisBoost = Math.round((weights[dimensionKey] || 0) * 15);
+    dimensionScores[dimensionKey] = Math.max(
+      35,
+      Math.min(100, Math.round(stageScore * 0.65 + keywordScore * 0.35 + emphasisBoost))
+    );
+  });
+
+  return dimensionScores;
+}
+
+function aggregateDimensionScores(records) {
+  const totals = {};
+  const counts = {};
+
+  Object.keys(DIMENSION_LABELS).forEach((dimensionKey) => {
+    totals[dimensionKey] = 0;
+    counts[dimensionKey] = 0;
+  });
+
+  records.forEach((record) => {
+    Object.keys(DIMENSION_LABELS).forEach((dimensionKey) => {
+      const value = record.dimensions?.[dimensionKey];
+      if (typeof value === "number") {
+        totals[dimensionKey] += value;
+        counts[dimensionKey] += 1;
+      }
+    });
+  });
+
+  Object.keys(DIMENSION_LABELS).forEach((dimensionKey) => {
+    totals[dimensionKey] = counts[dimensionKey] === 0 ? 0 : Math.round(totals[dimensionKey] / counts[dimensionKey]);
+  });
+
+  return totals;
+}
+
+function aggregateCapabilityScores(records) {
+  const totals = { knowledge: 0, ability: 0, literacy: 0 };
+  let count = 0;
+
+  records.forEach((record) => {
+    const bucket = STAGE_CAPABILITY_BUCKETS[record.stageId] || STAGE_CAPABILITY_BUCKETS[1];
+    totals.knowledge += record.score * bucket.knowledge;
+    totals.ability += record.score * bucket.ability;
+    totals.literacy += record.score * bucket.literacy;
+    count += 1;
+  });
+
+  if (count === 0) {
+    return totals;
+  }
+
+  return {
+    knowledge: Math.round(totals.knowledge / count),
+    ability: Math.round(totals.ability / count),
+    literacy: Math.round(totals.literacy / count)
+  };
+}
+
+function buildNarrativeDiagnosis(records, dimensions) {
+  if (records.length === 0) {
+    return "尚无训练记录。";
+  }
+
+  const strongest = Object.entries(dimensions).sort((a, b) => b[1] - a[1])[0];
+  const weakest = Object.entries(dimensions).sort((a, b) => a[1] - b[1])[0];
+  const passedCount = records.filter((record) => record.pass).length;
+
+  return [
+    `已完成 ${passedCount} / ${STAGES.length} 幕，当前最强维度为“${DIMENSION_LABELS[strongest[0]]}”，最需补强的是“${DIMENSION_LABELS[weakest[0]]}”。`,
+    `从过程看，学生已能从诊断判断逐步过渡到复盘与沟通，但围绕“${DIMENSION_LABELS[weakest[0]]}”仍需给出更具体、可执行的表达。`,
+    "本报告仅用于教学反馈，不构成真实医疗建议或执业评价。"
+  ].join("\n");
+}
+
+function buildReportState() {
+  if (state.records.length === 0) {
+    return null;
+  }
+
+  const averageScore = Math.round(state.records.reduce((sum, record) => sum + record.score, 0) / state.records.length);
+  const passedCount = state.records.filter((record) => record.pass).length;
+  const dimensions = aggregateDimensionScores(state.records);
+  const capabilities = aggregateCapabilityScores(state.records);
+
+  return {
+    averageScore,
+    passedCount,
+    dimensions,
+    capabilities,
+    narrative: buildNarrativeDiagnosis(state.records, dimensions)
+  };
+}
+
+function renderMetricBars(container, items) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "metric-row";
+
+    const label = document.createElement("span");
+    label.className = "metric-label";
+    label.textContent = item.label;
+
+    const bar = document.createElement("div");
+    bar.className = "metric-bar";
+
+    const fill = document.createElement("div");
+    fill.className = "metric-fill";
+    fill.style.width = `${Math.max(4, item.value)}%`;
+
+    const value = document.createElement("span");
+    value.className = "metric-value";
+    value.textContent = `${item.value}`;
+
+    bar.appendChild(fill);
+    row.appendChild(label);
+    row.appendChild(bar);
+    row.appendChild(value);
+    container.appendChild(row);
+  });
+}
+
+function renderReportDashboard() {
+  state.report = buildReportState();
+  if (!reportPanel) {
+    return;
+  }
+
+  if (!state.report) {
+    reportPanel.hidden = true;
+    return;
+  }
+
+  reportPanel.hidden = false;
+
+  if (reportSummary) {
+    reportSummary.innerHTML = `
+      <article class="report-card"><strong>${state.report.averageScore}</strong><span>平均得分</span></article>
+      <article class="report-card"><strong>${state.report.passedCount}/${STAGES.length}</strong><span>已通过幕次</span></article>
+      <article class="report-card"><strong>${state.report.dimensions.empathy}</strong><span>人文关怀</span></article>
+      <article class="report-card"><strong>${state.report.capabilities.literacy}</strong><span>素养维度</span></article>
+    `;
+  }
+
+  renderMetricBars(stageScoreChart, state.records.map((record) => ({ label: record.stageTitle, value: record.score })));
+  renderMetricBars(dimensionChart, Object.entries(DIMENSION_LABELS).map(([key, label]) => ({ label, value: state.report.dimensions[key] || 0 })));
+  renderMetricBars(capabilityChart, [
+    { label: "知识", value: state.report.capabilities.knowledge },
+    { label: "能力", value: state.report.capabilities.ability },
+    { label: "素养", value: state.report.capabilities.literacy }
+  ]);
+
+  if (reportNarrative) {
+    reportNarrative.textContent = state.report.narrative;
+  }
+}
+
+function buildMarkdownReport() {
+  const report = buildReportState();
+  if (!report) {
+    return "# 临床思辨与沟通能力诊断报告\n\n尚无训练记录。";
+  }
+
+  return [
+    "# 临床思辨与沟通能力诊断报告",
+    "",
+    `- 平均得分：${report.averageScore}`,
+    `- 已通过幕次：${report.passedCount}/${STAGES.length}`,
+    `- 诊断推理：${report.dimensions.diagnosticReasoning}`,
+    `- 证据整合：${report.dimensions.evidenceIntegration}`,
+    `- 临床决策：${report.dimensions.clinicalDecision}`,
+    `- 沟通能力：${report.dimensions.communication}`,
+    `- 人文关怀：${report.dimensions.empathy}`,
+    "",
+    "## 分幕记录",
+    ...state.records.flatMap((record) => [
+      `### ${record.stageTitle}`,
+      `- 得分：${record.score}`,
+      `- 判定：${record.pass ? "通过" : "未通过"}`,
+      `- 缺失点：${(record.missing || []).join("、") || "无"}`,
+      `- 反馈：${record.feedback || "无"}`,
+      `- 维度：${Object.entries(record.dimensions || {}).map(([key, value]) => `${DIMENSION_LABELS[key]} ${value}`).join("；")}`,
+      ""
+    ]),
+    "## 综合诊断",
+    report.narrative,
+    "",
+    "仅教学用途，不构成医疗建议。"
+  ].join("\n");
+}
+
 function safeParseEvaluation(raw, stage) {
   let obj = null;
   try {
@@ -749,6 +1065,8 @@ async function evaluateCurrentStage(userText) {
     pass: result.pass
   };
 
+  const dimensions = deriveDimensionScores(stage, userText, result.score);
+
   state.records.push({
     stageId: stage.id,
     stageTitle: stage.title,
@@ -758,8 +1076,11 @@ async function evaluateCurrentStage(userText) {
     pass: result.pass,
     missing: result.missing,
     feedback: result.feedback,
-    source
+    source,
+    dimensions
   });
+
+  renderReportDashboard();
 
   appendMessage(
     "assistant",
@@ -787,7 +1108,7 @@ async function evaluateCurrentStage(userText) {
 
   appendMessage(
     "assistant",
-    "四幕全部完成。\n\n闭环总结：病例呈现 -> 初诊判断 -> 病情反转 -> 误诊暴露 -> 病理实锤 -> 复盘反思 -> 规范迁移。\n\n你已完成本次临床误诊复盘思辨训练。"
+    `四幕全部完成。\n\n闭环总结：病例呈现 -> 初诊判断 -> 病情反转 -> 误诊暴露 -> 病理实锤 -> 复盘反思 -> 沟通与共情。\n\n综合诊断：\n${state.report ? state.report.narrative : "报告已生成。"}`
   );
 }
 
@@ -842,8 +1163,10 @@ clearContextBtn.addEventListener("click", () => {
   state.stageResults = {};
   state.knowledgeLoaded = false;
   state.records = [];
+  state.report = null;
   knowledgeStatus.textContent = "流程已重置，请重新加载资料。";
   renderStageTimeline();
+  renderReportDashboard();
   appendMessage("assistant", "已重置流程。请重新加载资料后，从第一幕开始作答。\n\n说明：该原型仅用于教学和演示，不用于真实医疗决策。");
 });
 
@@ -866,6 +1189,7 @@ function exportRecords() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const jsonName = `training-records-${stamp}.json`;
   const csvName = `training-records-${stamp}.csv`;
+  const mdName = `training-report-${stamp}.md`;
 
   downloadBlob(JSON.stringify(state.records, null, 2), jsonName, "application/json");
 
@@ -878,6 +1202,7 @@ function exportRecords() {
     "source",
     "missing",
     "feedback",
+    "dimensions",
     "answer"
   ];
 
@@ -890,6 +1215,7 @@ function exportRecords() {
     r.source,
     (r.missing || []).join("|") || "",
     r.feedback || "",
+    Object.entries(r.dimensions || {}).map(([key, value]) => `${DIMENSION_LABELS[key]}:${value}`).join("|") || "",
     r.answer || ""
   ]);
 
@@ -902,7 +1228,8 @@ function exportRecords() {
     .join("\n");
 
   downloadBlob(csv, csvName, "text/csv;charset=utf-8");
-  appendMessage("assistant", "训练记录已导出为 JSON 与 CSV 文件。\n\n说明：仅教学用途，不构成医疗建议。");
+  downloadBlob(buildMarkdownReport(), mdName, "text/markdown;charset=utf-8");
+  appendMessage("assistant", "训练记录已导出为 JSON、CSV 与 Markdown 诊断报告。\n\n说明：仅教学用途，不构成医疗建议。");
 }
 
 exportBtn.addEventListener("click", exportRecords);

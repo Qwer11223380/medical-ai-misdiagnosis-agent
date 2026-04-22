@@ -290,6 +290,35 @@ details summary {
   min-height: 62px;
 }
 
+.dialogue-card {
+  border-radius: 10px;
+  padding: 0.8rem 0.9rem;
+  margin: 0.6rem 0;
+  border: 1px solid #e6d9c4;
+}
+
+.dialogue-card.family {
+  background: linear-gradient(135deg, #fff6eb 0%, #fff0df 100%);
+}
+
+.dialogue-card.followup {
+  background: linear-gradient(135deg, #eef8f4 0%, #e5f4ef 100%);
+}
+
+.dialogue-role {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #2f6f62;
+}
+
+.care-checklist {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.8rem;
+}
+
 
 .lightbox {
   position: fixed;
@@ -474,4 +503,107 @@ details summary {
   outline: none;
   border-color: #2f6f62;
   box-shadow: 0 0 0 3px rgba(47, 111, 98, 0.1);
+}
+
+.report-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.report-header h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+}
+
+.report-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.report-card {
+  margin: 0;
+  padding: 0.9rem;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #fffaf1, #f8f0df);
+  border: 1px solid #ead8bb;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.report-card strong {
+  font-size: 1.6rem;
+  color: #1f433c;
+}
+
+.report-card span {
+  color: #56645f;
+  font-size: 0.9rem;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.report-block {
+  border: 1px solid #eadbc4;
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: #fffdf8;
+}
+
+.report-block h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #21423c;
+}
+
+.metric-chart {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 42px;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.metric-label,
+.metric-value {
+  font-size: 0.88rem;
+  color: #4e5d58;
+}
+
+.metric-bar {
+  height: 12px;
+  border-radius: 999px;
+  background: #efe7d7;
+  overflow: hidden;
+}
+
+.metric-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2f6f62, #c67a38);
+}
+
+.report-narrative {
+  margin: 0;
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.6;
+  color: #263732;
+  background: transparent;
 }
