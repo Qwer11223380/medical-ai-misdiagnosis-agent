@@ -245,6 +245,51 @@ details summary {
   color: #34463f;
 }
 
+.stage-task-panel {
+  margin-top: 0.7rem;
+  border: 1px solid #e2d5be;
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #fffaf1;
+}
+
+.task-title {
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  color: #1e3f39;
+}
+
+.vote-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.55rem;
+}
+
+.vote-stats {
+  font-size: 0.9rem;
+  color: #556560;
+}
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.45rem;
+}
+
+.task-table th,
+.task-table td {
+  border: 1px solid #e7d8bf;
+  padding: 0.45rem;
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+.task-table textarea {
+  min-height: 62px;
+}
+
 
 .lightbox {
   position: fixed;

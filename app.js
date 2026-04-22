@@ -49,20 +49,20 @@ const STAGES = [
 const STAGE_EVIDENCE = {
   1: {
     narrative:
-      "首诊阶段：仅展示“XX人民医院病历摘要”与活检病理图1，模拟真实门诊首诊信息不完整场景。",
+      "首诊阶段：仅展示病历摘要与两张活检病理图，请先完成任务组件再提交作答。",
     caseText: [
       "XX人民医院病历摘要：患者，男性，60岁。因发现右颊部肿物半年余入院。",
       "主诉与病程：半年前右颊部见黄豆大小肿物，无疼痛、出血等不适。药物治疗效果差，半年内逐渐增大至山核桃大小。门诊行局部切取活检，病理提示右颊部鳞状上皮乳头状瘤样增生。",
       "体检：右颊粘膜可及约3cm肿块，质中，界尚清，表面乳头状突起，粗糙；活检创口愈合好；右颊部肿胀明显，触痛（+）；双侧颈部及下颌区未及明显肿大淋巴结。"
     ],
     images: [
-      { src: "Picture.png", caption: "活检病理图1：局部肿物病理切片 HE 10X" }
+      { src: "Picture.png", caption: "局部肿物病理切片 HE 10X" },
+      { src: "Picture2.png", caption: "局部肿物病理切片 HE 20X" }
     ],
     clues: [
       "学生任务：判断该患者此时是良性还是恶性肿瘤。",
       "任务点：填写《良恶性肿瘤鉴别表》前两行（分化程度、生长速度）。",
-      "投票设定：预置90%学生会先选“良性”（界清、乳头状、活检提示增生）。",
-      "设计意图：制造首诊思维陷阱，为后续认知冲突与复盘纠偏埋伏笔。"
+      "先完成投票与鉴别表，再在下方输入框写出判断依据。"
     ]
   },
   2: {
@@ -108,6 +108,7 @@ const stageTitle = document.getElementById("stageTitle");
 const stageNarrative = document.getElementById("stageNarrative");
 const stageCaseText = document.getElementById("stageCaseText");
 const stageMedia = document.getElementById("stageMedia");
+const stageTaskPanel = document.getElementById("stageTaskPanel");
 const stageChecklist = document.getElementById("stageChecklist");
 const imageLightbox = document.getElementById("imageLightbox");
 const lightboxImg = document.getElementById("lightboxImg");
@@ -173,6 +174,7 @@ function renderStageEvidence() {
     stageNarrative.textContent = "四幕流程已完成。可导出训练记录并复盘。";
     stageCaseText.innerHTML = "";
     stageMedia.innerHTML = "";
+    stageTaskPanel.innerHTML = "";
     stageChecklist.innerHTML = "";
     return;
   }
@@ -211,12 +213,69 @@ function renderStageEvidence() {
     stageMedia.appendChild(fig);
   });
 
+  renderStageTaskPanel(stage);
+
   stageChecklist.innerHTML = "";
   (evidence.clues || []).forEach((clue) => {
     const li = document.createElement("li");
     li.textContent = clue;
     stageChecklist.appendChild(li);
   });
+}
+
+function renderStageTaskPanel(stage) {
+  stageTaskPanel.innerHTML = "";
+  if (stage.id !== 1) {
+    return;
+  }
+
+  stageTaskPanel.innerHTML = `
+    <p class="task-title">第一幕任务组件</p>
+    <div class="vote-row">
+      <span>学生投票：</span>
+      <label><input type="radio" name="tumorVote" value="良性" /> 良性</label>
+      <label><input type="radio" name="tumorVote" value="恶性" /> 恶性</label>
+      <span class="vote-stats">班级先验投票：良性 90% / 恶性 10%</span>
+    </div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th>鉴别维度</th>
+          <th>你的填写</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>分化程度</td>
+          <td><textarea id="diffDegree" placeholder="例如：目前活检显示增生，分化看似较好，但不能排除局灶恶变"></textarea></td>
+        </tr>
+        <tr>
+          <td>生长速度</td>
+          <td><textarea id="growthSpeed" placeholder="例如：半年内黄豆到山核桃，生长偏快，应提高恶性警惕"></textarea></td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function collectStageStructuredInput(stage) {
+  if (stage.id !== 1) {
+    return "";
+  }
+
+  const vote = document.querySelector('input[name="tumorVote"]:checked')?.value || "";
+  const diffDegree = document.getElementById("diffDegree")?.value.trim() || "";
+  const growthSpeed = document.getElementById("growthSpeed")?.value.trim() || "";
+
+  if (!vote || !diffDegree || !growthSpeed) {
+    throw new Error("第一幕请先完成学生投票和鉴别表前两行。\n需要填写：投票、分化程度、生长速度。")
+  }
+
+  return [
+    `学生投票：${vote}`,
+    `良恶性肿瘤鉴别表-分化程度：${diffDegree}`,
+    `良恶性肿瘤鉴别表-生长速度：${growthSpeed}`
+  ].join("\n");
 }
 
 function closeLightbox() {
@@ -575,6 +634,7 @@ async function evaluateCurrentStage(userText) {
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const input = userInput.value.trim();
+  const stage = currentStage();
   if (!input) {
     return;
   }
@@ -589,12 +649,25 @@ chatForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  appendMessage("user", input);
+  let finalInput = input;
+  try {
+    if (stage) {
+      const structured = collectStageStructuredInput(stage);
+      if (structured) {
+        finalInput = `${structured}\n\n学生补充说明：${input}`;
+      }
+    }
+  } catch (err) {
+    appendMessage("assistant", String(err.message || err));
+    return;
+  }
+
+  appendMessage("user", finalInput);
   userInput.value = "";
   sendBtn.disabled = true;
 
   try {
-    await evaluateCurrentStage(input);
+    await evaluateCurrentStage(finalInput);
   } catch (err) {
     appendMessage("assistant", `调用失败：${err.message}\n请检查网络，或更换免费模型接口。`);
   } finally {
