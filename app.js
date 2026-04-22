@@ -22,10 +22,10 @@ const STAGES = [
   },
   {
     id: 2,
-    title: "第二幕 复诊反转",
+    title: "关卡二：晴天霹雳",
     task:
-      "请根据复诊进展作答：1) 分析首次诊疗可能问题；2) 判断当前病变性质；3) 给出下一步检查建议。",
-    keyPoints: ["复发原因", "当前良恶性判断", "检查建议"],
+      "请根据二次入院资料完成重评：1) 重新判断良恶性；2) 对比两次入院差异；3) 补充《良恶性肿瘤鉴别表》中的转移、复发、术后生存栏目。",
+    keyPoints: ["重新诊断", "两次差异对比", "转移", "复发", "术后生存"],
     passScore: 70
   },
   {
@@ -69,9 +69,24 @@ const STAGE_EVIDENCE = {
   },
   2: {
     narrative:
-      "复诊阶段：加入复发与病程反转信息，请重新评估首次决策是否存在低估风险。",
-    images: [{ src: "Picture2.png", caption: "复诊外观图：术后复发、增大、破溃风险" }],
-    clues: ["术后复发并增大", "局部破溃、质地变硬", "提示首次处置可能不足"]
+      "复诊阶段",
+    caseText: [
+      "患者，男性，61 岁。因“右颊部肿物切除术后半年余”入院。",
+      "半年余前因右颊部肿物在外院行“右颊部病损切除术+颌面部局部皮瓣转移修复术”。术后发现原手术区又有肿物长出，并逐渐增大。",
+      "体检：右前颊粘膜肿胀，可见大小约 3×2cm 隆起，表面有破溃，质较硬，活动度尚可。左颊部、腭部、舌体及口底粘膜无异常，舌体活动好，双侧颈部及下颌区未及明显肿大淋巴结。",
+      "入院后完善常规检查，于 2020 年 1 月 6 日行“口咽部、颊部肿物局部扩大切除术+下颌骨部分切除术+颈淋巴结清扫术+复合组织游离移植术”。",
+      "术中见：右颊部贯穿性肿瘤伴感染坏死，范围约 6×4cm，质地偏硬，累及口咽侧壁、臼后三角、右下后牙龈，前缘靠近右侧口角。右上颈部数枚淋巴结较饱满。"
+    ],
+    images: [
+      { src: "image.png", caption: "肿瘤病理切片 HE 10X" },
+      { src: "image2.png", caption: "肿瘤病理切片 HE 20X" },
+      { src: "image3.png", caption: "图3" }
+    ],
+    clues: [
+      "学生任务：重新评估诊断，并对比两次入院资料差异。",
+      "补充鉴别表栏目：转移、复发、术后生存。",
+      "请先完成任务组件，再提交文字说明。"
+    ]
   },
   3: {
     narrative:
@@ -227,32 +242,70 @@ function renderStageEvidence() {
 
 function renderStageTaskPanel(stage) {
   stageTaskPanel.innerHTML = "";
-  if (stage.id !== 1) {
+  if (stage.id !== 1 && stage.id !== 2) {
+    return;
+  }
+
+  if (stage.id === 1) {
+    stageTaskPanel.innerHTML = `
+      <p class="task-title">第一幕任务组件</p>
+      <div class="vote-row">
+        <span>学生投票：</span>
+        <label><input type="radio" name="tumorVote" value="良性" /> 良性</label>
+        <label><input type="radio" name="tumorVote" value="恶性" /> 恶性</label>
+      </div>
+      <table class="task-table">
+        <thead>
+          <tr>
+            <th>鉴别维度</th>
+            <th>你的填写</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>分化程度</td>
+            <td><textarea id="diffDegree" placeholder="例如：目前活检显示增生，分化看似较好，但不能排除局灶恶变"></textarea></td>
+          </tr>
+          <tr>
+            <td>生长速度</td>
+            <td><textarea id="growthSpeed" placeholder="例如：半年内黄豆到山核桃，生长偏快，应提高恶性警惕"></textarea></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
     return;
   }
 
   stageTaskPanel.innerHTML = `
-    <p class="task-title">第一幕任务组件</p>
+    <p class="task-title">第二幕任务组件</p>
     <div class="vote-row">
-      <span>学生投票：</span>
-      <label><input type="radio" name="tumorVote" value="良性" /> 良性</label>
-      <label><input type="radio" name="tumorVote" value="恶性" /> 恶性</label>
+      <span>重评结论：</span>
+      <label><input type="radio" name="reEvalVote" value="偏良性" /> 偏良性</label>
+      <label><input type="radio" name="reEvalVote" value="偏恶性" /> 偏恶性</label>
     </div>
     <table class="task-table">
       <thead>
         <tr>
-          <th>鉴别维度</th>
+          <th>项目</th>
           <th>你的填写</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>分化程度</td>
-          <td><textarea id="diffDegree" placeholder="例如：目前活检显示增生，分化看似较好，但不能排除局灶恶变"></textarea></td>
+          <td>两次入院差异</td>
+          <td><textarea id="admissionDiff" placeholder="对比首次与二次入院：病灶表现、体征变化、手术范围变化"></textarea></td>
         </tr>
         <tr>
-          <td>生长速度</td>
-          <td><textarea id="growthSpeed" placeholder="例如：半年内黄豆到山核桃，生长偏快，应提高恶性警惕"></textarea></td>
+          <td>转移</td>
+          <td><textarea id="metastasisField" placeholder="填写转移证据判断与依据"></textarea></td>
+        </tr>
+        <tr>
+          <td>复发</td>
+          <td><textarea id="recurrenceField" placeholder="填写复发表现与时间线"></textarea></td>
+        </tr>
+        <tr>
+          <td>术后生存</td>
+          <td><textarea id="survivalField" placeholder="填写对术后生存风险与预后的评估"></textarea></td>
         </tr>
       </tbody>
     </table>
@@ -260,8 +313,28 @@ function renderStageTaskPanel(stage) {
 }
 
 function collectStageStructuredInput(stage) {
-  if (stage.id !== 1) {
+  if (stage.id !== 1 && stage.id !== 2) {
     return "";
+  }
+
+  if (stage.id === 2) {
+    const vote = document.querySelector('input[name="reEvalVote"]:checked')?.value || "";
+    const admissionDiff = document.getElementById("admissionDiff")?.value.trim() || "";
+    const metastasisField = document.getElementById("metastasisField")?.value.trim() || "";
+    const recurrenceField = document.getElementById("recurrenceField")?.value.trim() || "";
+    const survivalField = document.getElementById("survivalField")?.value.trim() || "";
+
+    if (!vote || !admissionDiff || !metastasisField || !recurrenceField || !survivalField) {
+      throw new Error("第二幕请先完成重评结论与任务表。\n需要填写：重评结论、两次入院差异、转移、复发、术后生存。")
+    }
+
+    return [
+      `重评结论：${vote}`,
+      `两次入院差异：${admissionDiff}`,
+      `良恶性肿瘤鉴别表-转移：${metastasisField}`,
+      `良恶性肿瘤鉴别表-复发：${recurrenceField}`,
+      `良恶性肿瘤鉴别表-术后生存：${survivalField}`
+    ].join("\n");
   }
 
   const vote = document.querySelector('input[name="tumorVote"]:checked')?.value || "";
@@ -401,9 +474,10 @@ function buildEvaluationMessages(stage, userText) {
       "说明为何“界清+乳头状+增生活检”可能误导"
     ],
     2: [
-      "指出首次诊疗存在低估风险或手术范围不足",
-      "复发加速、破溃、变硬提示恶性倾向提升",
-      "建议完善分期检查与多学科评估"
+      "给出二次重评后的诊断倾向",
+      "明确两次入院差异（病灶、体征、手术范围）",
+      "补全转移、复发、术后生存三个栏目",
+      "解释首次活检与二次病理结果为何会不一致"
     ],
     3: [
       "识别首次诊断偏差点",
