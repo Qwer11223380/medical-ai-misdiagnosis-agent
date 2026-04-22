@@ -9,9 +9,9 @@ const FILES = [
   "附件1医学教育智能体及应用案例申报书docx.docx",
   "Picture.png",
   "Picture2.png",
-  "1.png",
-  "2.png",
-  "3.png"
+  "figure1.png",
+  "figure2.png",
+  "figure3.png"
 ];
 
 const STAGES = [
@@ -81,9 +81,9 @@ const STAGE_EVIDENCE = {
       "术中见：右颊部贯穿性肿瘤伴感染坏死，范围约 6×4cm，质地偏硬，累及口咽侧壁、臼后三角、右下后牙龈，前缘靠近右侧口角。右上颈部数枚淋巴结较饱满。"
     ],
     images: [
-      { src: "1.png", caption: "肿瘤病理切片 HE 10X" },
-      { src: "2.png", caption: "肿瘤病理切片 HE 20X" },
-      { src: "3.png", caption: "肿瘤病理切片 HE 40X" }
+      { src: "figure1.png", caption: "肿瘤病理切片 HE 10X" },
+      { src: "figure2.png", caption: "肿瘤病理切片 HE 20X" },
+      { src: "figure3.png", caption: "肿瘤病理切片 HE 40X" }
     ],
     clues: [
       "学生任务：重新评估诊断，并对比两次入院资料差异。",
