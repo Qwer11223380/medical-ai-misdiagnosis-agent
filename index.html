@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>医学教育智能体 H5 原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <main class="app">
+    <header class="hero">
+      <p class="eyebrow">H5 + 免费模型</p>
+      <h1>医学教育智能体</h1>
+      <p class="subtitle">
+        从本地案例文件自动构建知识上下文，支持初诊、复诊、肿瘤病例讨论和诊断复盘。
+      </p>
+    </header>
+
+    <section class="panel setup-panel">
+      <div class="stage-box">
+        <p class="stage-label">任务引擎进度</p>
+        <ol id="stageTimeline" class="stage-timeline">
+          <li data-stage="1" class="active">第一幕 初诊导入</li>
+          <li data-stage="2">第二幕 复诊反转</li>
+          <li data-stage="3">第三幕 误诊复盘</li>
+          <li data-stage="4">第四幕 迁移应用</li>
+        </ol>
+        <p id="stageStatus" class="status">
+          当前幕：第一幕。仅完成本幕后才会解锁下一幕。
+        </p>
+      </div>
+      <div class="setup-row actions">
+        <button id="loadKnowledgeBtn">加载目录资料</button>
+        <button id="clearContextBtn" class="ghost">重置训练流程</button>
+        <button id="exportBtn" class="ghost">导出训练记录</button>
+      </div>
+      <p id="knowledgeStatus" class="status">尚未加载资料。</p>
+      <p class="status">部署建议：优先使用 Cloudflare Pages 公开访问。</p>
+      <details>
+        <summary>已配置资料清单</summary>
+        <ul id="fileList"></ul>
+      </details>
+    </section>
+
+    <section class="panel chat-panel">
+      <div id="chat" class="chat" aria-live="polite"></div>
+      <form id="chatForm" class="chat-form">
+        <textarea id="userInput" rows="4" placeholder="请作答当前幕任务。未通过前无法进入下一幕。"></textarea>
+        <div class="chat-actions">
+          <span id="modelBadge">模型: Pollinations openai</span>
+          <button type="submit" id="sendBtn">提交本幕作答</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

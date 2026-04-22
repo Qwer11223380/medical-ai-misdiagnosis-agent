@@ -1,0 +1,244 @@
+:root {
+  --paper: #fbf8f1;
+  --ink: #17201d;
+  --muted: #4a5c55;
+  --accent: #b44f2d;
+  --accent-2: #2f6f62;
+  --line: #d8d0bf;
+  --panel: rgba(255, 252, 245, 0.88);
+  --shadow: 0 20px 40px rgba(36, 37, 32, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Outfit", "PingFang SC", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 15% 20%, #ffe8cf 0, transparent 35%),
+    radial-gradient(circle at 85% 0%, #d4eee6 0, transparent 40%),
+    var(--paper);
+  min-height: 100vh;
+}
+
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(66, 84, 77, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 84, 77, 0.06) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black 20%, transparent 90%);
+}
+
+.app {
+  width: min(1080px, 92vw);
+  margin: 2rem auto 3rem;
+  position: relative;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.hero {
+  animation: rise 650ms ease-out both;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+h1 {
+  margin: 0;
+  font-family: "Noto Serif SC", serif;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin-top: 0.55rem;
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+.panel {
+  background: var(--panel);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  animation: rise 750ms ease-out both;
+}
+
+.setup-panel {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.stage-box {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.stage-label {
+  margin: 0;
+  color: #2f6f62;
+  font-weight: 700;
+}
+
+.stage-timeline {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.38rem;
+}
+
+.stage-timeline li {
+  color: #5b665f;
+}
+
+.stage-timeline li.active {
+  color: #1d3e38;
+  font-weight: 700;
+}
+
+.stage-timeline li.done {
+  color: #2f6f62;
+}
+
+.setup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  min-width: 7.6rem;
+}
+
+label {
+  font-weight: 600;
+}
+
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+select,
+textarea {
+  border: 1px solid #c8beab;
+  border-radius: 10px;
+  padding: 0.56rem 0.7rem;
+  background: #fffdf7;
+  color: var(--ink);
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.56rem 1rem;
+  background: linear-gradient(135deg, #b44f2d, #cb7b34);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  filter: brightness(1.05);
+}
+
+button.ghost {
+  background: #f2ead8;
+  color: #2a3b35;
+}
+
+.status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+details summary {
+  cursor: pointer;
+  color: #244e45;
+}
+
+.chat {
+  min-height: 330px;
+  max-height: 58vh;
+  overflow: auto;
+  padding: 0.25rem;
+}
+
+.msg {
+  padding: 0.7rem 0.84rem;
+  border-radius: 12px;
+  margin: 0.45rem 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.msg.user {
+  background: #eef6f2;
+  border: 1px solid #c8dfd5;
+}
+
+.msg.assistant {
+  background: #fff8ef;
+  border: 1px solid #edd6b5;
+}
+
+.chat-form {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.chat-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+#modelBadge {
+  font-size: 0.88rem;
+  color: #3e5a53;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .app {
+    width: 95vw;
+    margin-top: 1rem;
+  }
+
+  .chat {
+    min-height: 280px;
+  }
+}
