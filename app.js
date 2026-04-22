@@ -49,31 +49,47 @@ const STAGES = [
 const STAGE_EVIDENCE = {
   1: {
     narrative:
-      "首诊阶段：请先观察颊部病变图像，并结合病史与活检提示（乳头状瘤样增生）进行初步判断。",
-    images: [{ src: "Picture.png", caption: "首诊外观图：右颊部肿物（黄豆至山核桃样增大）" }],
+      "首诊阶段：先完整阅读病例文字与病理图，再进行初诊判断。",
+    caseText: [
+      "患者，男性，60岁。因发现右颊部肿物半年余入院。半年前发现右颊部黄豆大小肿物，无疼痛、出血等不适，自行药物治疗疗效不佳，后逐渐增大至山核桃大小。",
+      "门诊行局部肿物切取活检，病理提示右颊部鳞状上皮乳头状瘤样增生。",
+      "体检要点：右颊黏膜约3cm肿块，质中，界尚清，肿块表面多乳头状突起，粗糙，活检创口愈合好；右颊部肿胀明显，触痛（+）。双侧颈部及下颌区未见明显肿大淋巴结。",
+      "入院后于2019年5月8日行右颊部病损切除术+颊面部局部皮瓣转移修复术。因术前已行局部活检，完整切除标本未再行病理检查。"
+    ],
+    images: [
+      { src: "Picture.png", caption: "首诊病理图（左图10X）" },
+      { src: "Picture2.png", caption: "首诊病理图（右图20X）" }
+    ],
+    sources: [
+      { href: "患者初诊.pdf", label: "查看原始病例：患者初诊.pdf" },
+      { href: "肿瘤病例.pdf", label: "查看关联材料：肿瘤病例.pdf" }
+    ],
     clues: [
-      "主诉：右颊部肿物逐步增大",
-      "首次活检提示乳头状瘤样增生",
-      "请避免仅凭单次活检做终局判断"
+      "核心判断1：当前偏良性还是偏恶性？",
+      "核心判断2：给出至少2条证据依据",
+      "核心判断3：是否需要进一步分期评估与扩大病理取材？"
     ]
   },
   2: {
     narrative:
       "复诊阶段：加入复发与病程反转信息，请重新评估首次决策是否存在低估风险。",
     images: [{ src: "Picture2.png", caption: "复诊外观图：术后复发、增大、破溃风险" }],
-    clues: ["术后复发并增大", "局部破溃、质地变硬", "提示首次处置可能不足"]
+    clues: ["术后复发并增大", "局部破溃、质地变硬", "提示首次处置可能不足"],
+    sources: [{ href: "患者复诊.pdf", label: "查看原始病例：患者复诊.pdf" }]
   },
   3: {
     narrative:
       "复盘阶段：二次病理与转移证据已经出现，请按诊断偏差、标本漏洞、手术范围三环节复盘。",
     images: [],
-    clues: ["二次手术病理结果", "淋巴结转移证据", "肺部转移证据"]
+    clues: ["二次手术病理结果", "淋巴结转移证据", "肺部转移证据"],
+    sources: [{ href: "诊断复盘.pdf", label: "查看原始材料：诊断复盘.pdf" }]
   },
   4: {
     narrative:
       "迁移阶段：请将本案教训转化为通用临床规则，形成可执行清单。",
     images: [],
-    clues: ["诊疗规范清单", "沟通要点清单", "风险防范清单", "个人行动卡"]
+    clues: ["诊疗规范清单", "沟通要点清单", "风险防范清单", "个人行动卡"],
+    sources: [{ href: "迁移应用.pdf", label: "查看原始材料：迁移应用.pdf" }]
   }
 };
 
@@ -98,8 +114,10 @@ const stageStatus = document.getElementById("stageStatus");
 const exportBtn = document.getElementById("exportBtn");
 const stageTitle = document.getElementById("stageTitle");
 const stageNarrative = document.getElementById("stageNarrative");
+const stageCaseText = document.getElementById("stageCaseText");
 const stageMedia = document.getElementById("stageMedia");
 const stageChecklist = document.getElementById("stageChecklist");
+const stageSources = document.getElementById("stageSources");
 
 const FREE_MODEL_CANDIDATES = [
   { endpoint: "https://text.pollinations.ai/openai", model: "openai" },
@@ -158,14 +176,23 @@ function renderStageEvidence() {
   if (!stage) {
     stageTitle.textContent = "训练完成";
     stageNarrative.textContent = "四幕流程已完成。可导出训练记录并复盘。";
+    stageCaseText.innerHTML = "";
     stageMedia.innerHTML = "";
     stageChecklist.innerHTML = "";
+    stageSources.innerHTML = "";
     return;
   }
 
-  const evidence = STAGE_EVIDENCE[stage.id] || { narrative: "", images: [], clues: [] };
+  const evidence = STAGE_EVIDENCE[stage.id] || { narrative: "", images: [], clues: [], caseText: [], sources: [] };
   stageTitle.textContent = `${stage.title} 资料卡`;
   stageNarrative.textContent = evidence.narrative;
+
+  stageCaseText.innerHTML = "";
+  (evidence.caseText || []).forEach((text) => {
+    const p = document.createElement("p");
+    p.textContent = text;
+    stageCaseText.appendChild(p);
+  });
 
   stageMedia.innerHTML = "";
   (evidence.images || []).forEach((img) => {
@@ -189,6 +216,16 @@ function renderStageEvidence() {
     const li = document.createElement("li");
     li.textContent = clue;
     stageChecklist.appendChild(li);
+  });
+
+  stageSources.innerHTML = "";
+  (evidence.sources || []).forEach((src) => {
+    const a = document.createElement("a");
+    a.href = `./${encodeURIComponent(src.href)}`;
+    a.textContent = src.label;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    stageSources.appendChild(a);
   });
 }
 
