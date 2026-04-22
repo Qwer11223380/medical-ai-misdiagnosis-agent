@@ -46,6 +46,37 @@ const STAGES = [
   }
 ];
 
+const STAGE_EVIDENCE = {
+  1: {
+    narrative:
+      "首诊阶段：请先观察颊部病变图像，并结合病史与活检提示（乳头状瘤样增生）进行初步判断。",
+    images: [{ src: "Picture.png", caption: "首诊外观图：右颊部肿物（黄豆至山核桃样增大）" }],
+    clues: [
+      "主诉：右颊部肿物逐步增大",
+      "首次活检提示乳头状瘤样增生",
+      "请避免仅凭单次活检做终局判断"
+    ]
+  },
+  2: {
+    narrative:
+      "复诊阶段：加入复发与病程反转信息，请重新评估首次决策是否存在低估风险。",
+    images: [{ src: "Picture2.png", caption: "复诊外观图：术后复发、增大、破溃风险" }],
+    clues: ["术后复发并增大", "局部破溃、质地变硬", "提示首次处置可能不足"]
+  },
+  3: {
+    narrative:
+      "复盘阶段：二次病理与转移证据已经出现，请按诊断偏差、标本漏洞、手术范围三环节复盘。",
+    images: [],
+    clues: ["二次手术病理结果", "淋巴结转移证据", "肺部转移证据"]
+  },
+  4: {
+    narrative:
+      "迁移阶段：请将本案教训转化为通用临床规则，形成可执行清单。",
+    images: [],
+    clues: ["诊疗规范清单", "沟通要点清单", "风险防范清单", "个人行动卡"]
+  }
+};
+
 const state = {
   knowledgeText: "",
   currentStageIndex: 0,
@@ -65,6 +96,10 @@ const sendBtn = document.getElementById("sendBtn");
 const stageTimeline = document.getElementById("stageTimeline");
 const stageStatus = document.getElementById("stageStatus");
 const exportBtn = document.getElementById("exportBtn");
+const stageTitle = document.getElementById("stageTitle");
+const stageNarrative = document.getElementById("stageNarrative");
+const stageMedia = document.getElementById("stageMedia");
+const stageChecklist = document.getElementById("stageChecklist");
 
 const FREE_MODEL_CANDIDATES = [
   { endpoint: "https://text.pollinations.ai/openai", model: "openai" },
@@ -110,10 +145,51 @@ function renderStageTimeline() {
     const stage = STAGES[state.currentStageIndex];
     stageStatus.textContent = `当前幕：${stage.title}。必须通过本幕后才能进入下一幕。`;
   }
+
+  renderStageEvidence();
 }
 
 function currentStage() {
   return STAGES[state.currentStageIndex] || null;
+}
+
+function renderStageEvidence() {
+  const stage = currentStage();
+  if (!stage) {
+    stageTitle.textContent = "训练完成";
+    stageNarrative.textContent = "四幕流程已完成。可导出训练记录并复盘。";
+    stageMedia.innerHTML = "";
+    stageChecklist.innerHTML = "";
+    return;
+  }
+
+  const evidence = STAGE_EVIDENCE[stage.id] || { narrative: "", images: [], clues: [] };
+  stageTitle.textContent = `${stage.title} 资料卡`;
+  stageNarrative.textContent = evidence.narrative;
+
+  stageMedia.innerHTML = "";
+  (evidence.images || []).forEach((img) => {
+    const fig = document.createElement("figure");
+    const image = document.createElement("img");
+    image.src = `./${encodeURIComponent(img.src)}`;
+    image.alt = img.caption;
+    image.loading = "lazy";
+    image.onerror = () => {
+      image.alt = "图片未加载，请检查静态资源是否存在";
+    };
+    const cap = document.createElement("figcaption");
+    cap.textContent = img.caption;
+    fig.appendChild(image);
+    fig.appendChild(cap);
+    stageMedia.appendChild(fig);
+  });
+
+  stageChecklist.innerHTML = "";
+  (evidence.clues || []).forEach((clue) => {
+    const li = document.createElement("li");
+    li.textContent = clue;
+    stageChecklist.appendChild(li);
+  });
 }
 
 function pushStageTask() {
@@ -124,7 +200,7 @@ function pushStageTask() {
   }
   appendMessage(
     "assistant",
-    `${stage.title}\n\n任务要求：${stage.task}\n\n评分门槛：${stage.passScore} 分。\n必答要点：${stage.keyPoints.join("、")}。`
+    `${stage.title}\n\n请先阅读上方“资料卡”（含图片/线索），再完成作答。\n\n任务要求：${stage.task}\n\n评分门槛：${stage.passScore} 分。\n必答要点：${stage.keyPoints.join("、")}。`
   );
 }
 
