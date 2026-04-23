@@ -573,6 +573,16 @@ details summary {
   gap: 0.55rem;
 }
 
+.chart-canvas {
+  width: 100%;
+  height: 240px;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid #e9dcc6;
+  background: linear-gradient(180deg, #fffdf8 0%, #fbf3e6 100%);
+  margin-bottom: 0.65rem;
+}
+
 .metric-row {
   display: grid;
   grid-template-columns: 88px 1fr 42px;
@@ -607,3 +617,99 @@ details summary {
   color: #263732;
   background: transparent;
 }
+
+/* ── Stage 4 interactive dialogue ──────────────────────────────────────── */
+.stage4-hint {
+  margin: 0 0 0.75rem;
+  color: #34463f;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.stage4-chat-log {
+  min-height: 180px;
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid #e2d5be;
+  border-radius: 10px;
+  background: #fffbf4;
+  padding: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.stage4-msg {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  max-width: 88%;
+}
+
+.stage4-msg p {
+  margin: 0.2rem 0 0;
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.stage4-role {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.stage4-msg-family {
+  background: linear-gradient(135deg, #fff6eb 0%, #fff0df 100%);
+  border: 1px solid #f0d9b5;
+  align-self: flex-start;
+}
+
+.stage4-msg-family .stage4-role {
+  color: #b44f2d;
+}
+
+.stage4-msg-doctor {
+  background: linear-gradient(135deg, #eef8f4 0%, #e2f4ef 100%);
+  border: 1px solid #c2dfd5;
+  align-self: flex-end;
+}
+
+.stage4-msg-doctor .stage4-role {
+  color: #2f6f62;
+}
+
+.stage4-send-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.stage4-send-row textarea {
+  min-height: 68px;
+  resize: vertical;
+}
+
+.stage4-send-row button {
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.stage4-submit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.stage4-submit-btn {
+  background: linear-gradient(135deg, #1d3e38, #2f6f62);
+}
+
+.stage4-status {
+  font-size: 0.88rem;
+  color: #556560;
+}
+/* ───────────────────────────────────────────────────────────────────────── */

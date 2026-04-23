@@ -167,7 +167,8 @@ const state = {
   stageResults: {},
   knowledgeLoaded: false,
   records: [],
-  report: null
+  report: null,
+  stage4Chat: []
 };
 
 const chat = document.getElementById("chat");
@@ -196,7 +197,15 @@ const reportSummary = document.getElementById("reportSummary");
 const stageScoreChart = document.getElementById("stageScoreChart");
 const dimensionChart = document.getElementById("dimensionChart");
 const capabilityChart = document.getElementById("capabilityChart");
+const stageBarCanvas = document.getElementById("stageBarCanvas");
+const dimensionRadarCanvas = document.getElementById("dimensionRadarCanvas");
+const capabilityBarCanvas = document.getElementById("capabilityBarCanvas");
 const reportNarrative = document.getElementById("reportNarrative");
+
+const chartState = {
+  radarLabels: [],
+  radarValues: []
+};
 
 const FREE_MODEL_CANDIDATES = [
   { endpoint: "https://text.pollinations.ai/openai", model: "openai" },
@@ -375,27 +384,30 @@ function renderStageTaskPanel(stage) {
 
   if (stage.id === 4) {
     stageTaskPanel.innerHTML = `
-      <p class="task-title">第四幕 AI 情景对话组件</p>
-      <div class="dialogue-card family">
-        <p class="dialogue-role">AI家属</p>
-        <p>医生，手术不是已经做完了吗？为什么还要反复复查？我们家里现在经济压力也很大，我最担心的是以后还会不会复发。您能不能直接告诉我，这个病到底严不严重，后面还要花多少钱？</p>
+      <p class="task-title">第四幕 AI 情景对话</p>
+      <p class="stage4-hint">你扮演<strong>出院医生</strong>，AI 扮演<strong>焦虑家属</strong>。多轮对话中覆盖：人文关怀、知情同意、随访医嘱、费用顾虑后，点击"提交对话评分"。<br>（Ctrl+Enter 快速发送）</p>
+      <div id="stage4ChatLog" class="stage4-chat-log"></div>
+      <div class="stage4-send-row">
+        <textarea id="stage4Input" rows="3" placeholder="以医生身份回复家属..."></textarea>
+        <button type="button" id="stage4SendBtn">发送回复</button>
       </div>
-      <div class="dialogue-card followup">
-        <p class="dialogue-role">追问提示</p>
-        <p>如果你准备在回答中一并覆盖，可以顺带说明：回家后该观察什么症状？如果不按时复查会有什么风险？</p>
-      </div>
-      <div class="pbl-response">
-        <label for="dischargeCommunication"><strong>请以医生身份作答：</strong></label>
-        <textarea id="dischargeCommunication" placeholder="建议结构：先共情安抚，再解释当前情况与不确定性，然后明确复查时间、警示症状和费用沟通原则。" style="min-height: 180px;"></textarea>
-      </div>
-      <div class="care-checklist">
-        <p class="pbl-label">建议覆盖的沟通动作：</p>
-        <label class="scaffold-item"><input type="checkbox" name="careAction" value="emotion" /> <span>先回应焦虑情绪</span></label>
-        <label class="scaffold-item"><input type="checkbox" name="careAction" value="consent" /> <span>讲清知情同意与不确定性</span></label>
-        <label class="scaffold-item"><input type="checkbox" name="careAction" value="followup" /> <span>明确复查时间与警示症状</span></label>
-        <label class="scaffold-item"><input type="checkbox" name="careAction" value="cost" /> <span>回应费用顾虑但不牺牲必要随访</span></label>
+      <div class="stage4-submit-row">
+        <button type="button" id="stage4SubmitBtn" class="stage4-submit-btn">提交对话评分</button>
+        <span id="stage4Status" class="stage4-status"></span>
       </div>
     `;
+    if (state.stage4Chat.length === 0) {
+      state.stage4Chat.push({ role: "family", text: STAGE4_INITIAL_FAMILY_MSG });
+    }
+    renderStage4ChatLog();
+    document.getElementById("stage4SendBtn").addEventListener("click", handleStage4Send);
+    document.getElementById("stage4SubmitBtn").addEventListener("click", handleStage4Submit);
+    document.getElementById("stage4Input").addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleStage4Send();
+      }
+    });
     return;
   }
 
@@ -441,25 +453,11 @@ function collectStageStructuredInput(stage) {
   }
 
   if (stage.id === 4) {
-    const dischargeCommunication = document.getElementById("dischargeCommunication")?.value.trim() || "";
-    const careActions = Array.from(document.querySelectorAll('input[name="careAction"]:checked')).map((element) => element.value);
-
-    if (!dischargeCommunication) {
-      throw new Error("第四幕请先完成出院沟通回答。\n需要填写：对焦虑家属的完整沟通回应。");
+    const doctorTurns = state.stage4Chat.filter((m) => m.role === "doctor").length;
+    if (doctorTurns === 0) {
+      throw new Error(`第四幕请在上方 AI 对话面板中完成至少一轮对话，\n再点击对话面板内的"提交对话评分"按钮。`);
     }
-
-    const careActionLabels = {
-      emotion: "先回应焦虑情绪",
-      consent: "讲清知情同意与不确定性",
-      followup: "明确复查时间与警示症状",
-      cost: "回应费用顾虑"
-    };
-
-    return [
-      "【AI家属情景】患者家属担心复发又怕花钱，要求医生解释病情与后续安排。",
-      `【学生沟通回应】${dischargeCommunication}`,
-      `【已覆盖沟通动作】${careActions.length > 0 ? careActions.map((item) => careActionLabels[item] || item).join("、") : "未勾选，按正文评估"}`
-    ].join("\n");
+    return buildStage4Transcript();
   }
 
   if (stage.id === 3) {
@@ -619,6 +617,7 @@ async function loadKnowledge() {
     state.stageResults = {};
     state.records = [];
     state.report = null;
+    state.stage4Chat = [];
     renderStageTimeline();
     renderReportDashboard();
     const loadedCount = chunks.length;
@@ -915,6 +914,213 @@ function renderMetricBars(container, items) {
   });
 }
 
+function getCanvasContext(canvas) {
+  if (!canvas) {
+    return null;
+  }
+  const rect = canvas.getBoundingClientRect();
+  const cssWidth = Math.max(280, Math.floor(rect.width || canvas.clientWidth || 280));
+  const cssHeight = Math.max(220, Math.floor(rect.height || canvas.clientHeight || 220));
+  const dpr = window.devicePixelRatio || 1;
+
+  if (canvas.width !== Math.floor(cssWidth * dpr) || canvas.height !== Math.floor(cssHeight * dpr)) {
+    canvas.width = Math.floor(cssWidth * dpr);
+    canvas.height = Math.floor(cssHeight * dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return null;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, width: cssWidth, height: cssHeight };
+}
+
+function drawRadarChart(canvas, labels, values) {
+  const context = getCanvasContext(canvas);
+  if (!context || labels.length === 0) {
+    return;
+  }
+
+  const { ctx, width, height } = context;
+  ctx.clearRect(0, 0, width, height);
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.max(60, Math.min(width, height) * 0.33);
+  const levels = 5;
+  const axisCount = labels.length;
+
+  ctx.strokeStyle = "#d9ccb3";
+  ctx.lineWidth = 1;
+  for (let level = 1; level <= levels; level += 1) {
+    const r = (radius * level) / levels;
+    ctx.beginPath();
+    for (let i = 0; i < axisCount; i += 1) {
+      const angle = -Math.PI / 2 + (Math.PI * 2 * i) / axisCount;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = "#cbbca1";
+  for (let i = 0; i < axisCount; i += 1) {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / axisCount;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  for (let i = 0; i < axisCount; i += 1) {
+    const value = Math.max(0, Math.min(100, values[i] || 0));
+    const scaled = (radius * value) / 100;
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / axisCount;
+    const x = cx + Math.cos(angle) * scaled;
+    const y = cy + Math.sin(angle) * scaled;
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.closePath();
+  ctx.fillStyle = "rgba(47, 111, 98, 0.3)";
+  ctx.strokeStyle = "#2f6f62";
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#1f433c";
+  ctx.font = '12px "Outfit", "PingFang SC", sans-serif';
+  labels.forEach((label, i) => {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / axisCount;
+    const tx = cx + Math.cos(angle) * (radius + 20);
+    const ty = cy + Math.sin(angle) * (radius + 20);
+    const metrics = ctx.measureText(label);
+    const left = tx - metrics.width / 2;
+    ctx.fillText(label, left, ty + 4);
+  });
+
+  chartState.radarLabels = labels.slice();
+  chartState.radarValues = values.slice();
+}
+
+function bindRadarHover(canvas) {
+  if (!canvas || canvas.dataset.hoverBound === "1") {
+    return;
+  }
+
+  const onMove = (event) => {
+    const labels = chartState.radarLabels;
+    const values = chartState.radarValues;
+    if (!labels.length || labels.length !== values.length) {
+      canvas.title = "";
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = Math.max(60, Math.min(width, height) * 0.33);
+    const px = event.clientX - rect.left;
+    const py = event.clientY - rect.top;
+    const dx = px - cx;
+    const dy = py - cy;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > radius + 30) {
+      canvas.title = "";
+      return;
+    }
+
+    const rawAngle = Math.atan2(dy, dx);
+    const normalized = (rawAngle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+    const index = Math.round((normalized / (Math.PI * 2)) * labels.length) % labels.length;
+    const value = Math.round(values[index] || 0);
+    canvas.title = `${labels[index]}: ${value} 分`;
+  };
+
+  canvas.addEventListener("mousemove", onMove);
+  canvas.addEventListener("mouseleave", () => {
+    canvas.title = "";
+  });
+  canvas.dataset.hoverBound = "1";
+}
+
+function drawBarChart(canvas, items, options = {}) {
+  const context = getCanvasContext(canvas);
+  if (!context || items.length === 0) {
+    return;
+  }
+
+  const { ctx, width, height } = context;
+  ctx.clearRect(0, 0, width, height);
+
+  const padding = { top: 16, right: 14, bottom: 44, left: 28 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const step = chartWidth / items.length;
+  const barWidth = Math.max(18, step * 0.5);
+  const maxValue = Math.max(100, ...items.map((item) => item.value));
+
+  ctx.strokeStyle = "#dfd2ba";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i += 1) {
+    const y = padding.top + (chartHeight * i) / 4;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(width - padding.right, y);
+    ctx.stroke();
+  }
+
+  const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+  gradient.addColorStop(0, options.topColor || "#2f6f62");
+  gradient.addColorStop(1, options.bottomColor || "#c67a38");
+
+  ctx.font = '12px "Outfit", "PingFang SC", sans-serif';
+  ctx.fillStyle = "#4e5d58";
+
+  items.forEach((item, index) => {
+    const clamped = Math.max(0, Math.min(maxValue, item.value || 0));
+    const barHeight = (clamped / maxValue) * chartHeight;
+    const x = padding.left + index * step + (step - barWidth) / 2;
+    const y = padding.top + chartHeight - barHeight;
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, barWidth, barHeight);
+
+    ctx.fillStyle = "#2a3b35";
+    const valueText = String(Math.round(item.value || 0));
+    const valueMetrics = ctx.measureText(valueText);
+    ctx.fillText(valueText, x + (barWidth - valueMetrics.width) / 2, y - 6);
+
+    const label = item.shortLabel || item.label;
+    ctx.fillStyle = "#4e5d58";
+    if (options.rotateLabels) {
+      ctx.save();
+      ctx.translate(x + barWidth / 2, height - 10);
+      ctx.rotate(-Math.PI / 5);
+      ctx.textAlign = "right";
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    } else {
+      const labelMetrics = ctx.measureText(label);
+      ctx.fillText(label, x + (barWidth - labelMetrics.width) / 2, height - 16);
+    }
+  });
+}
+
 function renderReportDashboard() {
   state.report = buildReportState();
   if (!reportPanel) {
@@ -948,6 +1154,44 @@ function renderReportDashboard() {
   if (reportNarrative) {
     reportNarrative.textContent = state.report.narrative;
   }
+
+  renderReportDashboardCharts();
+}
+
+function renderReportDashboardCharts() {
+  if (!state.report) {
+    return;
+  }
+  requestAnimationFrame(() => {
+    if (!state.report) {
+      return;
+    }
+    drawRadarChart(
+      dimensionRadarCanvas,
+      Object.values(DIMENSION_LABELS),
+      Object.keys(DIMENSION_LABELS).map((key) => state.report.dimensions[key] || 0)
+    );
+    bindRadarHover(dimensionRadarCanvas);
+
+    drawBarChart(
+      stageBarCanvas,
+      state.records.map((record) => ({
+        label: record.stageTitle,
+        value: record.score
+      })),
+      { topColor: "#2f6f62", bottomColor: "#c67a38", rotateLabels: true }
+    );
+
+    drawBarChart(
+      capabilityBarCanvas,
+      [
+        { label: "知识", value: state.report.capabilities.knowledge },
+        { label: "能力", value: state.report.capabilities.ability },
+        { label: "素养", value: state.report.capabilities.literacy }
+      ],
+      { topColor: "#b44f2d", bottomColor: "#e1a14e" }
+    );
+  });
 }
 
 function buildMarkdownReport() {
@@ -1112,6 +1356,138 @@ async function evaluateCurrentStage(userText) {
   );
 }
 
+// ── Stage 4 interactive dialogue ──────────────────────────────────────────
+const STAGE4_INITIAL_FAMILY_MSG =
+  "医生，手术不是已经做完了吗？为什么还要反复复查？我们家里现在经济压力也很大，" +
+  "我最担心的是以后还会不会复发。您能不能直接告诉我，这个病到底严不严重，后面还要花多少钱？";
+
+const FAMILY_FALLBACK_REPLIES = [
+  "那费用方面呢，这么频繁复查，我们家里真的负担很重，有没有办法减少次数？",
+  "我明白医生您说的，但如果万一复发了，我们怎么早点发现？有什么特别明显的症状吗？",
+  "好，出院后我记住了，那大概多久需要来一次？第一次复查是什么时候？",
+  "谢谢医生，您解释得很详细，我们一定会按时来复查的。"
+];
+
+function buildStage4Transcript() {
+  if (state.stage4Chat.length === 0) {
+    return "";
+  }
+  const lines = [
+    "【第四幕 AI 情景对话记录】",
+    "情景：患者首次手术后准备出院，AI扮演焦虑家属，学生扮演出院医生。",
+    ""
+  ];
+  state.stage4Chat.forEach((msg) => {
+    lines.push(msg.role === "family" ? `家属：${msg.text}` : `医生（学生）：${msg.text}`);
+  });
+  return lines.join("\n");
+}
+
+async function getFamilyMemberReply() {
+  const history = [
+    {
+      role: "system",
+      content:
+        "你扮演一位焦虑的患者家属。患者（你的家人）刚接受了口腔颊部手术，医生正在为其办理出院。" +
+        "你担心复发、担心费用、不理解医学术语。\n" +
+        "请用简短口语化的中文回应医生，表现出真实的担忧情绪。每次只说1-3句话，不要结束对话，保持追问状态。\n" +
+        "仅输出家属说的话，不要任何前缀或标注。"
+    }
+  ];
+  state.stage4Chat.forEach((msg) => {
+    history.push({ role: msg.role === "family" ? "assistant" : "user", content: msg.text });
+  });
+  return await askFreeModel(history, 0.75);
+}
+
+function renderStage4ChatLog() {
+  const logEl = document.getElementById("stage4ChatLog");
+  if (!logEl) {
+    return;
+  }
+  logEl.innerHTML = "";
+  state.stage4Chat.forEach((msg) => {
+    const div = document.createElement("div");
+    div.className = `stage4-msg stage4-msg-${msg.role}`;
+    const roleLabel = document.createElement("span");
+    roleLabel.className = "stage4-role";
+    roleLabel.textContent = msg.role === "family" ? "AI 家属" : "你（医生）";
+    const text = document.createElement("p");
+    text.textContent = msg.text;
+    div.appendChild(roleLabel);
+    div.appendChild(text);
+    logEl.appendChild(div);
+  });
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function handleStage4Send() {
+  const inputEl = document.getElementById("stage4Input");
+  const sendBtnEl = document.getElementById("stage4SendBtn");
+  const statusEl = document.getElementById("stage4Status");
+  if (!inputEl || !sendBtnEl) {
+    return;
+  }
+  const text = inputEl.value.trim();
+  if (!text) {
+    return;
+  }
+  state.stage4Chat.push({ role: "doctor", text });
+  inputEl.value = "";
+  sendBtnEl.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = "AI 家属回复中…";
+  }
+  renderStage4ChatLog();
+
+  let reply;
+  try {
+    reply = await getFamilyMemberReply();
+  } catch (_) {
+    const familyTurns = state.stage4Chat.filter((m) => m.role === "family").length;
+    reply = FAMILY_FALLBACK_REPLIES[Math.min(familyTurns, FAMILY_FALLBACK_REPLIES.length - 1)];
+  }
+  state.stage4Chat.push({ role: "family", text: reply });
+  renderStage4ChatLog();
+  sendBtnEl.disabled = false;
+  if (statusEl) {
+    statusEl.textContent = "";
+  }
+}
+
+async function handleStage4Submit() {
+  const submitBtnEl = document.getElementById("stage4SubmitBtn");
+  const statusEl = document.getElementById("stage4Status");
+  const doctorTurns = state.stage4Chat.filter((m) => m.role === "doctor").length;
+  if (doctorTurns === 0) {
+    if (statusEl) {
+      statusEl.textContent = "请先进行至少一轮对话再提交评分。";
+    }
+    return;
+  }
+  const transcript = buildStage4Transcript();
+  if (submitBtnEl) {
+    submitBtnEl.disabled = true;
+  }
+  if (statusEl) {
+    statusEl.textContent = "正在评分，请稍候…";
+  }
+  appendMessage("user", transcript);
+  try {
+    await evaluateCurrentStage(transcript);
+  } catch (err) {
+    appendMessage("assistant", `评分调用失败：${err.message}`);
+  } finally {
+    if (submitBtnEl) {
+      submitBtnEl.disabled = false;
+    }
+    if (statusEl) {
+      statusEl.textContent = "";
+    }
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const input = userInput.value.trim();
@@ -1164,6 +1540,7 @@ clearContextBtn.addEventListener("click", () => {
   state.knowledgeLoaded = false;
   state.records = [];
   state.report = null;
+  state.stage4Chat = [];
   knowledgeStatus.textContent = "流程已重置，请重新加载资料。";
   renderStageTimeline();
   renderReportDashboard();
