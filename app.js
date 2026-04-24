@@ -18,35 +18,35 @@ const FILES = [
 const STAGES = [
   {
     id: 1,
-    title: "关卡一：雾里看花",
+    title: "第一幕",
     task:
       "请根据病历摘要完成首诊判断：1) 先判断此时偏良性还是偏恶性；2) 填写《良恶性肿瘤鉴别表》前两行（分化程度、生长速度）；3) 说明你的判断依据。",
     keyPoints: ["良恶性判断", "分化程度", "生长速度"],
-    passScore: 65
+    passScore: 60
   },
   {
     id: 2,
-    title: "关卡二：晴天霹雳",
+    title: "第二幕",
     task:
       "请根据二次入院资料完成重评：1) 重新判断良恶性；2) 对比两次入院差异；3) 补充《良恶性肿瘤鉴别表》中的转移、复发、术后生存栏目。",
     keyPoints: ["重新诊断", "两次差异对比", "转移", "复发", "术后生存"],
-    passScore: 70
+    passScore: 60
   },
   {
     id: 3,
-    title: "第三幕 误诊复盘",
+    title: "整段复盘",
     task:
       "请完成4道核心复盘题：1) 良恶性最终判断；2) 证据链；3) 医患沟通要点；4) 主要教训与改进路径。",
     keyPoints: ["最终判断", "证据链", "沟通要点", "教训改进"],
-    passScore: 75
+    passScore: 60
   },
   {
     id: 4,
-    title: "第四幕 设身处地",
+    title: "医患沟通",
     task:
       "请围绕“第一次出院时，应如何与患者沟通？”完成情景对话：1) 回应家属焦虑与费用顾虑；2) 完成知情同意式解释；3) 给出可执行的随访医嘱。",
     keyPoints: ["人文关怀", "知情同意", "随访医嘱", "费用顾虑回应"],
-    passScore: 75
+    passScore: 60
   }
 ];
 
@@ -77,7 +77,7 @@ const STAGE_CAPABILITY_BUCKETS = {
   1: { knowledge: 0.55, ability: 0.3, literacy: 0.15 },
   2: { knowledge: 0.35, ability: 0.45, literacy: 0.2 },
   3: { knowledge: 0.2, ability: 0.45, literacy: 0.35 },
-  4: { knowledge: 0.1, ability: 0.35, literacy: 0.55 }
+  4: { knowledge: 0.15, ability: 0.45, literacy: 0.4 }
 };
 
 const STAGE_EVIDENCE = {
@@ -221,7 +221,7 @@ function init() {
 
   appendMessage(
     "assistant",
-    "你好，我是临床误诊复盘智能体。\n\n流程为四幕锁步推进：只有当前幕通过后，下一幕才会解锁。\n请先点击“加载目录资料”，系统将从第一幕开始。"
+    "你好，我是病理导师。\n\n流程为四幕锁步推进：只有当前幕通过后，下一幕才会解锁。\n请先点击“加载目录资料”，系统将从第一幕开始。"
   );
   renderStageTimeline();
 }
@@ -1271,7 +1271,8 @@ function safeParseEvaluation(raw, stage) {
 function applyLocalGate(stage, userText, evalResult) {
   const required = stage.keyPoints;
   const hitCount = required.filter((p) => userText.includes(p.slice(0, 2))).length;
-  const localPass = hitCount >= Math.max(2, required.length - 1);
+  const requiredHits = stage.id === 4 ? 1 : Math.max(2, required.length - 1);
+  const localPass = hitCount >= requiredHits;
   if (evalResult.pass && localPass) {
     return evalResult;
   }
