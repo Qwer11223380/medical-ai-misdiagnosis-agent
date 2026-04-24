@@ -825,24 +825,26 @@ function aggregateDimensionScores(records) {
 
 function aggregateCapabilityScores(records) {
   const totals = { knowledge: 0, ability: 0, literacy: 0 };
-  let count = 0;
+  const weightTotals = { knowledge: 0, ability: 0, literacy: 0 };
 
   records.forEach((record) => {
     const bucket = STAGE_CAPABILITY_BUCKETS[record.stageId] || STAGE_CAPABILITY_BUCKETS[1];
     totals.knowledge += record.score * bucket.knowledge;
     totals.ability += record.score * bucket.ability;
     totals.literacy += record.score * bucket.literacy;
-    count += 1;
+    weightTotals.knowledge += bucket.knowledge;
+    weightTotals.ability += bucket.ability;
+    weightTotals.literacy += bucket.literacy;
   });
 
-  if (count === 0) {
+  if (records.length === 0) {
     return totals;
   }
 
   return {
-    knowledge: Math.round(totals.knowledge / count),
-    ability: Math.round(totals.ability / count),
-    literacy: Math.round(totals.literacy / count)
+    knowledge: weightTotals.knowledge > 0 ? Math.round(totals.knowledge / weightTotals.knowledge) : 0,
+    ability: weightTotals.ability > 0 ? Math.round(totals.ability / weightTotals.ability) : 0,
+    literacy: weightTotals.literacy > 0 ? Math.round(totals.literacy / weightTotals.literacy) : 0
   };
 }
 
