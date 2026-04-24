@@ -34,7 +34,7 @@ const STAGES = [
   },
   {
     id: 3,
-    title: "整段复盘",
+    title: "诊断复盘",
     task:
       "请完成4道核心复盘题：1) 良恶性最终判断；2) 证据链；3) 医患沟通要点；4) 主要教训与改进路径。",
     keyPoints: ["最终判断", "证据链", "沟通要点", "教训改进"],
@@ -858,8 +858,8 @@ function buildNarrativeDiagnosis(records, dimensions) {
   const passedCount = records.filter((record) => record.pass).length;
 
   return [
-    `已完成 ${passedCount} / ${STAGES.length} 幕，当前最强维度为“${DIMENSION_LABELS[strongest[0]]}”，最需补强的是“${DIMENSION_LABELS[weakest[0]]}”。`,
-    `从过程看，学生已能从诊断判断逐步过渡到复盘与沟通，但围绕“${DIMENSION_LABELS[weakest[0]]}”仍需给出更具体、可执行的表达。`,
+    `已完成 ${passedCount} / ${STAGES.length} 幕，当前最强维度为“${DIMENSION_LABELS[strongest[0]]}”。`,
+    `建议下一阶段围绕“${DIMENSION_LABELS[weakest[0]]}”继续优化表达与落实路径，进一步提升作答完整度与可执行性。`,
     "本报告仅用于教学反馈，不构成真实医疗建议或执业评价。"
   ].join("\n");
 }
@@ -1218,7 +1218,6 @@ function buildMarkdownReport() {
       `### ${record.stageTitle}`,
       `- 得分：${record.score}`,
       `- 判定：${record.pass ? "通过" : "未通过"}`,
-      `- 缺失点：${(record.missing || []).join("、") || "无"}`,
       `- 反馈：${record.feedback || "无"}`,
       `- 维度：${Object.entries(record.dimensions || {}).map(([key, value]) => `${DIMENSION_LABELS[key]} ${value}`).join("；")}`,
       ""
@@ -1336,8 +1335,7 @@ async function evaluateCurrentStage(userText) {
       `评估来源：${source === "model" ? "免费模型" : "本地兜底规则"}\n` +
       `判定：${result.pass ? "通过，可进入下一幕" : "未通过，需补答本幕"}\n\n` +
       `评语：${result.feedback || "无"}\n` +
-      `缺失点：${result.missing.length > 0 ? result.missing.join("、") : "无"}\n` +
-      `补答提示：${result.next_hint || "无"}\n\n` +
+      `建议：${result.next_hint || "无"}\n\n` +
       `${result.teaching_note}`
   );
 
