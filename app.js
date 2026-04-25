@@ -415,8 +415,8 @@ function renderStageTaskPanel(stage) {
     <p class="task-title">第二幕任务组件</p>
     <div class="vote-row">
       <span>重评结论：</span>
-      <label><input type="radio" name="reEvalVote" value="偏良性" /> 偏良性</label>
-      <label><input type="radio" name="reEvalVote" value="偏恶性" /> 偏恶性</label>
+      <label><input type="radio" name="reEvalVote" value="良性" /> 良性</label>
+      <label><input type="radio" name="reEvalVote" value="恶性" /> 恶性</label>
     </div>
     <table class="task-table">
       <thead>
